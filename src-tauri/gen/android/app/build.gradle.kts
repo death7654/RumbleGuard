@@ -15,10 +15,10 @@ val tauriProperties = Properties().apply {
 
 android {
     compileSdk = 36
-    namespace = "com.visionarybytes.rumbleguard"
+    namespace = "com.audiobytes.rumbleguard"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "com.visionarybytes.rumbleguard"
+        applicationId = "com.audiobytes.rumbleguard"
         minSdk = 24
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()

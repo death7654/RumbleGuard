@@ -1,4 +1,4 @@
-package com.visionarybytes.rumbleguard
+package com.audiobytes.rumbleguard
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge

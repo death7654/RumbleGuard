@@ -2,12 +2,12 @@
   "name": "rumbleguard",
   "version": "0.1.0",
   "scripts": {
-    "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "tauri": "tauri"
-  },
+  "ng": "ng",
+  "start": "ng serve --host 0.0.0.0 --port 1420",
+  "build": "ng build",
+  "watch": "ng build --watch --configuration development",
+  "tauri": "tauri"
+},
   "private": true,
   "dependencies": {
     "@angular/common": "^20.1.4",

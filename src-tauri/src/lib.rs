@@ -5,8 +5,7 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn testing() -> String
-{
+fn testing() -> String {
     println!("Called from front");
     "Hello from rust".to_string()
 }
@@ -14,11 +13,14 @@ fn testing() -> String
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_biometric::init())
+        .plugin(tauri_plugin_websocket::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![
-            greet,
-            testing
-            ])
+        .invoke_handler(tauri::generate_handler![greet, testing])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -1,1 +1,5 @@
-/* You can add global styles to this file, and also import other style files */
+@import "tailwindcss";
+/* Or the standard legacy Tailwind directives depending on your setup v3 vs v4: */
+/* @tailwind base; */
+/* @tailwind components; */
+/* @tailwind utilities; *//* You can add global styles to this file, and also import other style files */

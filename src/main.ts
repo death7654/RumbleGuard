@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
-import { appConfig } from "./app/app.config"; // Keeping the super secret brain settings safe!
+import { appConfig } from "./app/app.config"; // Keeping the super secret brain settings safe
 
 // This is a recipe for a "Quirk Switch" (a special button that has a name and can be turned ON or OFF)
 interface QuirkSwitch {
@@ -136,7 +136,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // "Wake up!" - This runs immediately when our control panel is turned on
   ngOnInit() {
-    this.initCanvasAnimation(); // Start drawing the wiggle lines!
+    this.initCanvasAnimation(); // Start drawing the wiggle lines
   }
 
   // "Go to sleep" - Runs when the control panel is turned off completely
@@ -148,7 +148,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // Flippers/Togglers: Flipping a switch upside down when clicked
   toggleShield() {
-    this.isShieldEngaged = !this.isShieldEngaged; // If true becomes false, if false becomes true!
+    this.isShieldEngaged = !this.isShieldEngaged; // If true becomes false, if false becomes true
   }
 
   togglePlay() {
@@ -156,7 +156,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   toggleQuirk(id: string) {
-    // Looks through the quirk buttons, finds the one you clicked, and flips its active light!
+    // Looks through the quirk buttons, finds the one you clicked, and flips its active light
     this.quirks = this.quirks.map(q => q.id === id ? { ...q, active: !q.active } : q);
   }
 
@@ -184,7 +184,7 @@ export class AppComponent implements OnInit, OnDestroy {
       // If shield is active, make it bright green and glow! Otherwise, dull gray.
       ctx.strokeStyle = this.isShieldEngaged ? '#A3E635' : '#4B5563';
       ctx.lineWidth = 2;
-      ctx.shadowBlur = this.isShieldEngaged ? 10 : 0; // Glowing glow effect!
+      ctx.shadowBlur = this.isShieldEngaged ? 10 : 0; // Glowing glow effect
       ctx.shadowColor = '#A3E635';
       
       ctx.beginPath();
@@ -203,7 +203,7 @@ export class AppComponent implements OnInit, OnDestroy {
       ctx.beginPath();
       for (let x = 0; x < canvas.width; x++) {
         const amp = this.isShieldEngaged ? 15 : 2;
-        const y = canvas.height / 2 + Math.sin(x * 0.03 - this.phase) * amp; // Notice the minus sign makes it slide backward!
+        const y = canvas.height / 2 + Math.sin(x * 0.03 - this.phase) * amp; // Notice the minus sign makes it slide backward
         if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
       ctx.stroke();
@@ -212,14 +212,14 @@ export class AppComponent implements OnInit, OnDestroy {
       ctx.shadowBlur = 0;
       
       // Move the wave slightly forward so it looks animated next frame.
-      // It zooms fast if the shield is active, and creeps slow if inactive!
+      // It zooms fast if the shield is active, and creeps slow if inactive
       this.phase += this.isShieldEngaged ? 0.08 : 0.01;
       
-      // Tell the browser: "Quickly do this whole drawing process again on the next heartbeat!"
+      // Tell the browser: "Quickly do this whole drawing process again on the next heartbeat"
       this.animationFrameId = requestAnimationFrame(render);
     };
 
-    render(); // Fire up the drawing loop for the first time!
+    render(); // Fire up the drawing loop for the first time
   }
 }
 

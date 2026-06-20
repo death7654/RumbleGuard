@@ -51,6 +51,7 @@ fn start_recording(
         .map_err(|e| e.to_string())?;
 
     let sample_rate = supported_config.sample_rate().0;
+    let sample_format = supported_config.sample_format(); // Grab the hardware's native format
 
     let (tx, rx) = std::sync::mpsc::channel::<Vec<f32>>();
     *state.sample_tx.lock().map_err(|e| e.to_string())? = Some(tx.clone());
@@ -60,20 +61,31 @@ fn start_recording(
     });
 
     let config = supported_config.into();
-    let stream = device
-        .build_input_stream(
+    
+    // Build the stream dynamically depending on what format Android provides
+    let stream = match sample_format {
+        cpal::SampleFormat::F32 => device.build_input_stream(
             &config,
             move |data: &[f32], _| {
                 let _ = tx.send(data.to_vec());
             },
-            |err| eprintln!("Stream error: {err}"),
+            |err| { eprintln!("Stream error: {err}"); },
             None,
-        )
-        .map_err(|e| e.to_string())?;
+        ),
+        cpal::SampleFormat::I16 => device.build_input_stream(
+            &config,
+            move |data: &[i16], _| {
+                // Convert 16-bit integers to normalized f32 values (-1.0 to 1.0)
+                let f32_data: Vec<f32> = data.iter().map(|&sample| sample as f32 / i16::MAX as f32).collect();
+                let _ = tx.send(f32_data);
+            },
+            |err| { eprintln!("Stream error: {err}"); },
+            None,
+        ),
+        _ => return Err(format!("Unsupported hardware audio format: {:?}", sample_format)),
+    }.map_err(|e| e.to_string())?;
 
     stream.play().map_err(|e| e.to_string())?;
-
-    // Wrap in AudioStream before storing — this is where we enter the unsafe contract
     *stream_guard = Some(AudioStream(stream));
 
     Ok(())

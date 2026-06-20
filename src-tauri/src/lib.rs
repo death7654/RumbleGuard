@@ -1,17 +1,42 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod dsp;
 use dsp::run_dsp_loop;
 
-use tauri::Emitter;
-use cpal::traits::HostTrait;
-use tauri::State;
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
+// ── SendStream wrapper ────────────────────────────────────────────────────────
+// cpal::Stream is !Send on Windows (WASAPI) due to NotSendSyncAcrossAllPlatforms.
+// This is a blanket restriction: the stream never actually crosses thread
+// boundaries in our code — it lives inside a Mutex for its entire lifetime.
+// Wrapping it and asserting Send is sound under that invariant.
+struct AudioStream(cpal::Stream);
+
+// SAFETY: AudioStream is only accessed through a Mutex<Option<AudioStream>>.
+// We never move it out of the mutex and hand it to another thread.
+unsafe impl Send for AudioStream {}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+pub struct AudioState {
+    stream: std::sync::Mutex<Option<AudioStream>>,
+    sample_tx: std::sync::Mutex<Option<std::sync::mpsc::Sender<Vec<f32>>>>,
+}
+
+impl AudioState {
+    fn new() -> Self {
+        Self {
+            stream: std::sync::Mutex::new(None),
+            sample_tx: std::sync::Mutex::new(None),
+        }
+    }
+}
+
+// ── Commands ──────────────────────────────────────────────────────────────────
 #[tauri::command]
 fn start_recording(
-    app: tauri::AppHandle,          // Tauri injects this automatically
-    state: State<'_, AudioState>,
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AudioState>,
 ) -> Result<(), String> {
-    let mut stream_guard = state.stream.lock().unwrap();
+    let mut stream_guard = state.stream.lock().map_err(|e| e.to_string())?;
+
     if stream_guard.is_some() {
         return Err("Already recording".into());
     }
@@ -19,7 +44,7 @@ fn start_recording(
     let host = cpal::default_host();
     let device = host
         .default_input_device()
-        .ok_or("No input device")?;
+        .ok_or("No input device available")?;
 
     let supported_config = device
         .default_input_config()
@@ -28,9 +53,8 @@ fn start_recording(
     let sample_rate = supported_config.sample_rate().0;
 
     let (tx, rx) = std::sync::mpsc::channel::<Vec<f32>>();
-    *state.sample_tx.lock().unwrap() = Some(tx.clone());
+    *state.sample_tx.lock().map_err(|e| e.to_string())? = Some(tx.clone());
 
-    // Spawn the DSP loop — this is the thread that does FFT and emits events
     std::thread::spawn(move || {
         run_dsp_loop(rx, app, sample_rate);
     });
@@ -40,7 +64,6 @@ fn start_recording(
         .build_input_stream(
             &config,
             move |data: &[f32], _| {
-                // cpal's thread: keep this fast, just forward samples
                 let _ = tx.send(data.to_vec());
             },
             |err| eprintln!("Stream error: {err}"),
@@ -49,7 +72,17 @@ fn start_recording(
         .map_err(|e| e.to_string())?;
 
     stream.play().map_err(|e| e.to_string())?;
-    *stream_guard = Some(stream);
+
+    // Wrap in AudioStream before storing — this is where we enter the unsafe contract
+    *stream_guard = Some(AudioStream(stream));
+
+    Ok(())
+}
+
+#[tauri::command]
+fn stop_recording(state: tauri::State<'_, AudioState>) -> Result<(), String> {
+    *state.stream.lock().map_err(|e| e.to_string())? = None; // drops stream, stops cpal
+    *state.sample_tx.lock().map_err(|e| e.to_string())? = None; // closes channel, exits DSP loop
     Ok(())
 }
 
@@ -64,17 +97,23 @@ fn testing() -> String {
     "Hello from rust".to_string()
 }
 
+// ── Entry point ───────────────────────────────────────────────────────────────
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        //.plugin(tauri_plugin_biometric::init())
+        .manage(AudioState::new()) // ← was missing; without this, State<AudioState> panics at runtime
         .plugin(tauri_plugin_websocket::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, testing, start_recording])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            testing,
+            start_recording,
+            stop_recording
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

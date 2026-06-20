@@ -1,6 +1,6 @@
 use realfft::RealFftPlanner;
 use serde::Serialize;
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 
 pub const FFT_SIZE: usize = 2048;
 pub const HOP_SIZE: usize = FFT_SIZE / 2;

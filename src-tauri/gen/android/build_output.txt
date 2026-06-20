@@ -1,0 +1,248 @@
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources UP-TO-DATE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+[=========                              ] 25%                                   [=========                              ] 25% Fetch remote repository...        [=======================================] 100% Fetch remote repository...       
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preX86_64DebugBuild UP-TO-DATE
+> Task :app:mergeX86_64DebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateX86_64DebugBuildConfig UP-TO-DATE
+> Task :tauri-android:preBuild UP-TO-DATE
+> Task :tauri-android:preDebugBuild UP-TO-DATE
+> Task :tauri-android:writeDebugAarMetadata UP-TO-DATE
+> Task :tauri-plugin-biometric:preBuild UP-TO-DATE
+> Task :tauri-plugin-biometric:preDebugBuild UP-TO-DATE
+> Task :tauri-plugin-biometric:writeDebugAarMetadata UP-TO-DATE
+> Task :tauri-plugin-dialog:preBuild UP-TO-DATE
+> Task :tauri-plugin-dialog:preDebugBuild UP-TO-DATE
+> Task :tauri-plugin-dialog:writeDebugAarMetadata UP-TO-DATE
+> Task :tauri-plugin-fs:preBuild UP-TO-DATE
+> Task :tauri-plugin-fs:preDebugBuild UP-TO-DATE
+> Task :tauri-plugin-fs:writeDebugAarMetadata UP-TO-DATE
+> Task :tauri-plugin-geolocation:preBuild UP-TO-DATE
+> Task :tauri-plugin-geolocation:preDebugBuild UP-TO-DATE
+> Task :tauri-plugin-geolocation:writeDebugAarMetadata UP-TO-DATE
+> Task :tauri-plugin-notification:preBuild UP-TO-DATE
+> Task :tauri-plugin-notification:preDebugBuild UP-TO-DATE
+> Task :tauri-plugin-notification:writeDebugAarMetadata UP-TO-DATE
+> Task :tauri-plugin-opener:preBuild UP-TO-DATE
+> Task :tauri-plugin-opener:preDebugBuild UP-TO-DATE
+> Task :tauri-plugin-opener:writeDebugAarMetadata UP-TO-DATE
+> Task :app:checkX86_64DebugAarMetadata UP-TO-DATE
+> Task :app:generateX86_64DebugResValues UP-TO-DATE
+> Task :tauri-android:generateDebugResValues UP-TO-DATE
+> Task :tauri-android:generateDebugResources UP-TO-DATE
+> Task :tauri-android:packageDebugResources UP-TO-DATE
+> Task :tauri-plugin-biometric:generateDebugResValues UP-TO-DATE
+> Task :tauri-plugin-biometric:generateDebugResources UP-TO-DATE
+> Task :tauri-plugin-biometric:packageDebugResources UP-TO-DATE
+> Task :tauri-plugin-dialog:generateDebugResValues UP-TO-DATE
+> Task :tauri-plugin-dialog:generateDebugResources UP-TO-DATE
+> Task :tauri-plugin-dialog:packageDebugResources UP-TO-DATE
+> Task :tauri-plugin-fs:generateDebugResValues UP-TO-DATE
+> Task :tauri-plugin-fs:generateDebugResources UP-TO-DATE
+> Task :tauri-plugin-fs:packageDebugResources UP-TO-DATE
+> Task :tauri-plugin-geolocation:generateDebugResValues UP-TO-DATE
+> Task :tauri-plugin-geolocation:generateDebugResources UP-TO-DATE
+> Task :tauri-plugin-geolocation:packageDebugResources UP-TO-DATE
+> Task :tauri-plugin-notification:generateDebugResValues UP-TO-DATE
+> Task :tauri-plugin-notification:generateDebugResources UP-TO-DATE
+> Task :tauri-plugin-notification:packageDebugResources UP-TO-DATE
+> Task :tauri-plugin-opener:generateDebugResValues UP-TO-DATE
+> Task :tauri-plugin-opener:generateDebugResources UP-TO-DATE
+> Task :tauri-plugin-opener:packageDebugResources UP-TO-DATE
+> Task :app:mapX86_64DebugSourceSetPaths UP-TO-DATE
+> Task :app:generateX86_64DebugResources UP-TO-DATE
+> Task :app:mergeX86_64DebugResources UP-TO-DATE
+> Task :app:packageX86_64DebugResources UP-TO-DATE
+> Task :app:parseX86_64DebugLocalResources UP-TO-DATE
+> Task :app:createX86_64DebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksX86_64Debug UP-TO-DATE
+> Task :tauri-android:extractDeepLinksDebug UP-TO-DATE
+> Task :tauri-android:processDebugManifest UP-TO-DATE
+> Task :tauri-plugin-biometric:extractDeepLinksDebug UP-TO-DATE
+> Task :tauri-plugin-biometric:processDebugManifest UP-TO-DATE
+> Task :tauri-plugin-dialog:extractDeepLinksDebug UP-TO-DATE
+> Task :tauri-plugin-dialog:processDebugManifest UP-TO-DATE
+> Task :tauri-plugin-fs:extractDeepLinksDebug UP-TO-DATE
+> Task :tauri-plugin-fs:processDebugManifest UP-TO-DATE
+> Task :tauri-plugin-geolocation:extractDeepLinksDebug UP-TO-DATE
+> Task :tauri-plugin-geolocation:processDebugManifest UP-TO-DATE
+> Task :tauri-plugin-notification:extractDeepLinksDebug UP-TO-DATE
+> Task :tauri-plugin-notification:processDebugManifest UP-TO-DATE
+> Task :tauri-plugin-opener:extractDeepLinksDebug UP-TO-DATE
+> Task :tauri-plugin-opener:processDebugManifest UP-TO-DATE
+> Task :app:processX86_64DebugMainManifest UP-TO-DATE
+> Task :app:processX86_64DebugManifest UP-TO-DATE
+> Task :app:processX86_64DebugManifestForPackage UP-TO-DATE
+> Task :tauri-android:compileDebugLibraryResources UP-TO-DATE
+> Task :tauri-android:parseDebugLocalResources UP-TO-DATE
+> Task :tauri-android:generateDebugRFile UP-TO-DATE
+> Task :tauri-plugin-biometric:compileDebugLibraryResources UP-TO-DATE
+> Task :tauri-plugin-biometric:parseDebugLocalResources UP-TO-DATE
+> Task :tauri-plugin-biometric:generateDebugRFile UP-TO-DATE
+> Task :tauri-plugin-dialog:compileDebugLibraryResources UP-TO-DATE
+> Task :tauri-plugin-dialog:parseDebugLocalResources UP-TO-DATE
+> Task :tauri-plugin-dialog:generateDebugRFile UP-TO-DATE
+> Task :tauri-plugin-fs:compileDebugLibraryResources UP-TO-DATE
+> Task :tauri-plugin-fs:parseDebugLocalResources UP-TO-DATE
+> Task :tauri-plugin-fs:generateDebugRFile UP-TO-DATE
+> Task :tauri-plugin-geolocation:compileDebugLibraryResources UP-TO-DATE
+> Task :tauri-plugin-geolocation:parseDebugLocalResources UP-TO-DATE
+> Task :tauri-plugin-geolocation:generateDebugRFile UP-TO-DATE
+> Task :tauri-plugin-notification:compileDebugLibraryResources UP-TO-DATE
+> Task :tauri-plugin-notification:parseDebugLocalResources UP-TO-DATE
+> Task :tauri-plugin-notification:generateDebugRFile UP-TO-DATE
+> Task :tauri-plugin-opener:compileDebugLibraryResources UP-TO-DATE
+> Task :tauri-plugin-opener:parseDebugLocalResources UP-TO-DATE
+> Task :tauri-plugin-opener:generateDebugRFile UP-TO-DATE
+> Task :app:processX86_64DebugResources UP-TO-DATE
+> Task :tauri-android:checkKotlinGradlePluginConfigurationErrors
+> Task :tauri-android:generateDebugBuildConfig UP-TO-DATE
+> Task :tauri-android:compileDebugKotlin UP-TO-DATE
+> Task :tauri-android:javaPreCompileDebug UP-TO-DATE
+> Task :tauri-android:compileDebugJavaWithJavac UP-TO-DATE
+> Task :tauri-android:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :tauri-plugin-biometric:checkKotlinGradlePluginConfigurationErrors
+> Task :tauri-plugin-biometric:compileDebugKotlin UP-TO-DATE
+> Task :tauri-plugin-biometric:javaPreCompileDebug UP-TO-DATE
+> Task :tauri-plugin-biometric:compileDebugJavaWithJavac NO-SOURCE
+> Task :tauri-plugin-biometric:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :tauri-plugin-dialog:checkKotlinGradlePluginConfigurationErrors
+> Task :tauri-plugin-dialog:compileDebugKotlin UP-TO-DATE
+> Task :tauri-plugin-dialog:javaPreCompileDebug UP-TO-DATE
+> Task :tauri-plugin-dialog:compileDebugJavaWithJavac NO-SOURCE
+> Task :tauri-plugin-dialog:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :tauri-plugin-fs:checkKotlinGradlePluginConfigurationErrors
+> Task :tauri-plugin-fs:compileDebugKotlin UP-TO-DATE
+> Task :tauri-plugin-fs:javaPreCompileDebug UP-TO-DATE
+> Task :tauri-plugin-fs:compileDebugJavaWithJavac NO-SOURCE
+> Task :tauri-plugin-fs:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :tauri-plugin-geolocation:checkKotlinGradlePluginConfigurationErrors
+> Task :tauri-plugin-geolocation:compileDebugKotlin UP-TO-DATE
+> Task :tauri-plugin-geolocation:javaPreCompileDebug UP-TO-DATE
+> Task :tauri-plugin-geolocation:compileDebugJavaWithJavac NO-SOURCE
+> Task :tauri-plugin-geolocation:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :tauri-plugin-notification:checkKotlinGradlePluginConfigurationErrors
+> Task :tauri-plugin-notification:compileDebugKotlin UP-TO-DATE
+> Task :tauri-plugin-notification:javaPreCompileDebug UP-TO-DATE
+> Task :tauri-plugin-notification:compileDebugJavaWithJavac NO-SOURCE
+> Task :tauri-plugin-notification:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :tauri-plugin-opener:checkKotlinGradlePluginConfigurationErrors
+> Task :tauri-plugin-opener:compileDebugKotlin UP-TO-DATE
+> Task :tauri-plugin-opener:javaPreCompileDebug UP-TO-DATE
+> Task :tauri-plugin-opener:compileDebugJavaWithJavac NO-SOURCE
+> Task :tauri-plugin-opener:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :app:javaPreCompileX86_64Debug UP-TO-DATE
+> Task :app:mergeX86_64DebugShaders UP-TO-DATE
+> Task :app:compileX86_64DebugShaders NO-SOURCE
+> Task :app:generateX86_64DebugAssets UP-TO-DATE
+> Task :tauri-android:mergeDebugShaders UP-TO-DATE
+> Task :tauri-android:compileDebugShaders NO-SOURCE
+> Task :tauri-android:generateDebugAssets UP-TO-DATE
+> Task :tauri-android:mergeDebugAssets UP-TO-DATE
+> Task :tauri-plugin-biometric:mergeDebugShaders UP-TO-DATE
+> Task :tauri-plugin-biometric:compileDebugShaders NO-SOURCE
+> Task :tauri-plugin-biometric:generateDebugAssets UP-TO-DATE
+> Task :tauri-plugin-biometric:mergeDebugAssets UP-TO-DATE
+> Task :tauri-plugin-dialog:mergeDebugShaders UP-TO-DATE
+> Task :tauri-plugin-dialog:compileDebugShaders NO-SOURCE
+> Task :tauri-plugin-dialog:generateDebugAssets UP-TO-DATE
+> Task :tauri-plugin-dialog:mergeDebugAssets UP-TO-DATE
+> Task :tauri-plugin-fs:mergeDebugShaders UP-TO-DATE
+> Task :tauri-plugin-fs:compileDebugShaders NO-SOURCE
+> Task :tauri-plugin-fs:generateDebugAssets UP-TO-DATE
+> Task :tauri-plugin-fs:mergeDebugAssets UP-TO-DATE
+> Task :tauri-plugin-geolocation:mergeDebugShaders UP-TO-DATE
+> Task :tauri-plugin-geolocation:compileDebugShaders NO-SOURCE
+> Task :tauri-plugin-geolocation:generateDebugAssets UP-TO-DATE
+> Task :tauri-plugin-geolocation:mergeDebugAssets UP-TO-DATE
+> Task :tauri-plugin-notification:mergeDebugShaders UP-TO-DATE
+> Task :tauri-plugin-notification:compileDebugShaders NO-SOURCE
+> Task :tauri-plugin-notification:generateDebugAssets UP-TO-DATE
+> Task :tauri-plugin-notification:mergeDebugAssets UP-TO-DATE
+> Task :tauri-plugin-opener:mergeDebugShaders UP-TO-DATE
+> Task :tauri-plugin-opener:compileDebugShaders NO-SOURCE
+> Task :tauri-plugin-opener:generateDebugAssets UP-TO-DATE
+> Task :tauri-plugin-opener:mergeDebugAssets UP-TO-DATE
+> Task :app:mergeX86_64DebugAssets UP-TO-DATE
+> Task :app:compressX86_64DebugAssets UP-TO-DATE
+> Task :app:checkX86_64DebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarX86_64DebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexX86_64Debug UP-TO-DATE
+> Task :tauri-plugin-biometric:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :tauri-plugin-dialog:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :tauri-plugin-fs:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :tauri-plugin-geolocation:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :tauri-plugin-notification:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :tauri-plugin-opener:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :tauri-android:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :tauri-android:processDebugJavaRes UP-TO-DATE
+> Task :app:mergeLibDexX86_64Debug UP-TO-DATE
+> Task :tauri-plugin-biometric:processDebugJavaRes UP-TO-DATE
+> Task :tauri-plugin-dialog:processDebugJavaRes UP-TO-DATE
+> Task :tauri-plugin-fs:processDebugJavaRes UP-TO-DATE
+> Task :tauri-plugin-geolocation:processDebugJavaRes UP-TO-DATE
+> Task :tauri-plugin-notification:processDebugJavaRes UP-TO-DATE
+> Task :tauri-plugin-opener:processDebugJavaRes UP-TO-DATE
+
+> Task :app:compileX86_64DebugKotlin FAILED
+e: file:///C:/Users/robin/Documents/Robinson/hobbies/coding/RumbleGuard/src-tauri/gen/android/app/src/main/java/com/audiobytes/rumbleguard/MainActivity.kt:5:18 Unresolved reference: TauriActivity
+e: file:///C:/Users/robin/Documents/Robinson/hobbies/coding/RumbleGuard/src-tauri/gen/android/app/src/main/java/com/audiobytes/rumbleguard/MainActivity.kt:11:5 Unresolved reference: registerPlugin
+
+> Task :app:rustBuildX86_64Debug
+
+> rumbleguard@0.1.0 tauri
+> tauri android android-studio-script --target x86_64
+
+
+thread '<unnamed>' (10728) panicked at crates\tauri-cli\src\mobile\mod.rs:403:6:
+failed to read CLI options: Context("failed to build WebSocket client", Io(Os { code: 10061, kind: ConnectionRefused, message: "No connection could be made because the target machine actively refused it." }))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+> Task :app:rustBuildX86_64Debug FAILED
+
+[Incubating] Problems report is available at: file:///C:/Users/robin/Documents/Robinson/hobbies/coding/RumbleGuard/src-tauri/gen/android/build/reports/problems/problems-report.html
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':app:compileX86_64DebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':app:rustBuildX86_64Debug'.
+> A problem occurred starting process 'command 'npm.bat''
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 4s
+150 actionable tasks: 10 executed, 140 up-to-date

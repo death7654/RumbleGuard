@@ -31,6 +31,7 @@ tauri-plugin-geolocation = "2"
 cpal = "0.15"       # Cross-platform Audio Library (works on Android & Desktop)
 rustfft = "6.2"     # High-performance FFT
 num-complex = "0.4" # Required by rustfft to handle complex numbers
+realfft = "3.5.0"
 
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 tauri-plugin-biometric = "2"

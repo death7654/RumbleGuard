@@ -97,6 +97,11 @@ fn testing() -> String {
     "Hello from rust".to_string()
 }
 
+#[tauri::command]
+fn check_mic_permission() -> bool {
+    true
+}
+
 // ── Entry point ───────────────────────────────────────────────────────────────
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -112,7 +117,8 @@ pub fn run() {
             greet,
             testing,
             start_recording,
-            stop_recording
+            stop_recording,
+            check_mic_permission
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

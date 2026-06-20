@@ -1,4 +1,29 @@
-<p>cabincomponent works!</p>
-<audio #audioEl src="../../assets/hooligang.mp3" loop></audio>
-<button (click)="onStartTap()">Start</button>
-<button (click)="onStopTap()">Stop</button>
+<div class="p-4 bg-[#13191E] border border-gray-800 rounded-2xl text-white">
+  <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">Cabin Audio Node</p>
+  
+  <audio #audioEl src="assets/cabin-audio.mp3" loop></audio>
+
+  <div class="flex gap-2 my-3">
+    <button (click)="onStart()" class="px-4 py-2 bg-[#A3E635] text-black font-bold rounded-xl text-xs uppercase">Start Engine</button>
+    <br>
+    <button (click)="onStop()" class="px-4 py-2 bg-gray-800 text-gray-300 rounded-xl text-xs uppercase">Stop Engine</button>
+  </div>
+
+  @if (dominantHz > 0) {
+    <div class="mt-4 space-y-1 bg-[#080B0D] p-3 rounded-xl border border-gray-900 text-sm">
+      <p class="text-xs text-gray-400">Dominant Frequency: <span class="text-[#A3E635] font-mono">{{ dominantHz | number:'1.0-0' }} Hz</span></p>
+      <p class="text-xs text-gray-400">Noise Level: <span class="text-red-400 font-mono">{{ noiseDb | number:'1.1-1' }} dB</span></p>
+      
+      <div class="pt-2 mt-2 border-t border-gray-800 space-y-1">
+        <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Active Filter Corrections</p>
+        @for (band of activeBands; track $index) {
+          <div class="text-xs font-mono text-gray-300 flex justify-between">
+            <span>Band {{ $index + 1 }} ({{ band.frequency | number:'1.0-0' }} Hz)</span>
+            <span class="text-[#A3E635]">+{{ band.gain_db | number:'1.1-1' }} dB</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+  <p>{{dominantHz}}</p>
+</div>

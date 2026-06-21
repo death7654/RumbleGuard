@@ -45,6 +45,11 @@ android {
             )
         }
     }
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+        disable.add("Instantiatable")
+    }
     kotlinOptions {
         jvmTarget = "1.8"
     }

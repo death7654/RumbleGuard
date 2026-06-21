@@ -5,6 +5,24 @@
     <title>Tauri + Angular</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #000000; /* Prevents white flashes during launch */
+        overflow-x: hidden;       /* Eliminates unwanted side-scrolling jitter */
+      }
+      
+      /* Forces your Angular root selector to also stretch completely */
+      app-root {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
   </head>
   <body>
     <app-root></app-root>

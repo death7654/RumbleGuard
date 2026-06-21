@@ -16,6 +16,16 @@ val tauriProperties = Properties().apply {
 android {
     compileSdk = 36
     namespace = "com.audiobytes.rumbleguard"
+    
+    signingConfigs {
+        create("release") {
+            storeFile = file("rumbleguard-release.keystore")
+            storePassword = "ENTER_PASSWORD" 
+            keyAlias = "rumbleguard-alias"
+            keyPassword = "ENTER_PASSWORD"  
+        }
+    }
+
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
         applicationId = "com.audiobytes.rumbleguard"
@@ -24,13 +34,15 @@ android {
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }
+
     buildTypes {
         getByName("debug") {
             manifestPlaceholders["usesCleartextTraffic"] = "true"
             isDebuggable = true
             isJniDebuggable = true
             isMinifyEnabled = false
-            packaging {                jniLibs.keepDebugSymbols.add("*/arm64-v8a/*.so")
+            packaging {                
+                jniLibs.keepDebugSymbols.add("*/arm64-v8a/*.so")
                 jniLibs.keepDebugSymbols.add("*/armeabi-v7a/*.so")
                 jniLibs.keepDebugSymbols.add("*/x86/*.so")
                 jniLibs.keepDebugSymbols.add("*/x86_64/*.so")
@@ -38,6 +50,9 @@ android {
         }
         getByName("release") {
             isMinifyEnabled = true
+            
+            signingConfig = signingConfigs.getByName("release")
+
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }
                     .plus(getDefaultProguardFile("proguard-android-optimize.txt"))

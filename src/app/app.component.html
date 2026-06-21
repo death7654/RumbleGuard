@@ -1,199 +1,380 @@
-<main class="min-h-screen bg-black text-white py-4 px-3 pb-5 select-none w-100" style="max-width: 480px; margin: 0 auto;">
-  
+<main class="min-h-screen bg-black text-white py-4 px-3 pb-5 select-none w-100"
+      style="max-width: 480px; margin: 0 auto;">
+
+  <!-- Header -->
   <header class="d-flex justify-content-between align-items-center mb-4 px-2">
+
     <div>
-      <h1 class="h4 fw-black tracking-tight text-white m-0 flex-grow-1" style="font-weight: 900; letter-spacing: -0.5px;">
-        ReDrive <span class="text-success small fw-bold tracking-widest d-inline-block ms-1" style="font-size: 0.65rem; letter-spacing: 1px;">DRIVE SMARTER</span>
+      <h1 class="h4 fw-bold text-white m-0">
+        Acoustic Shield
       </h1>
+
+      <div class="text-secondary small">
+        Smart Cabin Noise Cancellation
+      </div>
     </div>
-    <button class="btn btn-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border-color: #2b2b2b; background-color: #141414;">
+
+    <button
+      class="btn btn-dark rounded-circle d-flex align-items-center justify-content-center"
+      style="width:40px;height:40px;border-color:#2b2b2b;background:#141414;">
       <i class="bi bi-gear-fill text-secondary"></i>
     </button>
+
   </header>
 
   <div class="d-flex flex-column gap-3 mb-5">
-    
+
+    <!-- HOME -->
     @if (currentTab === 'home') {
-      
-      <div class="p-4 rounded-5" style="background-color: #141414; border: 1px solid #222;">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div class="small fw-bold text-secondary tracking-wider text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
-            <i class="bi bi-radar me-1" [class.text-success]="isShieldEngaged"></i> 
-            Live Wave Spectrogram
-          </div>
-          <div class="badge bg-black text-success border border-dark rounded-pill py-1 px-2" style="font-size: 0.65rem; font-family: monospace;">
-            @if (isShieldEngaged) {
-              <span class="d-inline-block rounded-circle bg-success me-1 animate-pulse" style="width: 6px; height: 6px;"></span>
-              {{ dominantHertz }} Hz
-            } @else {
-              <span class="text-muted">SHIELD IDLE</span>
-            }
-          </div>
+
+    <div class="p-4 rounded-5"
+         style="background:#141414;border:1px solid #222;">
+
+      <div class="text-center mb-4">
+
+        <div
+          [class]="isShieldEngaged
+          ? 'badge bg-success-subtle text-success px-3 py-2 rounded-pill'
+          : 'badge bg-dark text-secondary px-3 py-2 rounded-pill'">
+
+          {{ isShieldEngaged ? 'ACTIVE' : 'STANDBY' }}
+
         </div>
 
-        <div #canvasContainer class="position-relative bg-black rounded-4 overflow-hidden border border-dark mb-3" style="height: 140px;">
-          <canvas #spectrogramCanvas height="140" class="w-100 h-100 d-block"></canvas>
-        </div>
+        <h2 class="mt-3 fw-bold">
+          Acoustic Shield
+        </h2>
 
-        <div 
-          [class]="isShieldEngaged ? 'text-success border-success-subtle bg-success-subtle' : 'text-secondary border-dark bg-dark'" 
-          class="w-100 py-3 rounded-4 fw-bold text-uppercase tracking-wide text-center border p-2" 
-          style="font-size: 0.75rem; transition: all 0.3s ease; --bs-bg-opacity: 0.03;"
-        >
-          <i class="bi bi-shield-lock-fill me-1"></i>
-          {{ isShieldEngaged ? 'Core Filter Pipeline Streaming' : 'Engine Link Standby' }}
-        </div>
+        <p class="text-secondary mb-0">
+          Real-Time Cabin Vibration Cancellation
+        </p>
+
       </div>
 
-      <div class="row g-3">
-        <div class="col-6">
-          <div class="p-4 rounded-4 h-100" style="background-color: #141414; border: 1px solid #222;">
-            <span class="d-block text-secondary fw-bold text-uppercase mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px;"><i class="bi bi-speedometer2 me-1"></i> Speed</span>
-            <div class="d-flex align-items-baseline">
-              <span class="display-6 fw-black tracking-tight" style="font-weight: 900;">168</span>
-              <span class="small text-secondary fw-bold ms-1" style="font-size: 0.7rem;">KM/H</span>
-            </div>
-            <div class="d-flex gap-1 mt-3">
-              @for (i of [1,2,3,4,5,6,7,8]; track i) {
-                <div class="rounded-sm flex-grow-1" style="height: 12px; background-color: #198754; border-radius: 2px;"></div>
-              }
-              @for (i of [1,2,3,4]; track i) {
-                <div class="rounded-sm flex-grow-1" style="height: 12px; background-color: #2b2b2b; border-radius: 2px;"></div>
-              }
-            </div>
-          </div>
+      <!-- Spectrum -->
+
+      <div
+        class="rounded-4 p-3 mb-3"
+        style="background:#0b0b0b;border:1px solid #222;">
+
+        <div
+          class="small text-secondary text-uppercase fw-bold mb-3">
+
+          Live Audio Spectrum
+
         </div>
 
-        <div class="col-6">
-          <div class="p-4 rounded-4 h-100" style="background-color: #141414; border: 1px solid #222;">
-            <span class="d-block text-secondary fw-bold text-uppercase mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px;"><i class="bi bi-cpu me-1"></i> Engine RPM</span>
-            <div class="d-flex align-items-baseline">
-              <span class="display-6 fw-black tracking-tight" style="font-weight: 900;">6.7K</span>
-              <span class="small text-secondary fw-bold ms-1" style="font-size: 0.7rem;">RPM</span>
-            </div>
-            <div class="d-flex gap-1 mt-3">
-              @for (i of [1,2,3,4,5,6,7,8,9,10]; track i) {
-                <div class="rounded-sm flex-grow-1" style="height: 12px; background-color: #198754; border-radius: 2px;"></div>
-              }
-              @for (i of [1,2]; track i) {
-                <div class="rounded-sm flex-grow-1" style="height: 12px; background-color: #2b2b2b; border-radius: 2px;"></div>
-              }
-            </div>
-          </div>
+        <div
+          #canvasContainer
+          class="position-relative rounded-4 overflow-hidden"
+          style="height:140px;">
+
+          <canvas
+            #spectrogramCanvas
+            height="140"
+            class="w-100 h-100 d-block">
+          </canvas>
+
         </div>
+
       </div>
 
-      <div class="p-4 rounded-4" style="background-color: #141414; border: 1px solid #222;">
-        <span class="d-block text-secondary text-uppercase fw-bold mb-3" style="font-size: 0.65rem; letter-spacing: 0.5px;"><i class="bi bi-sliders me-1"></i> Quirk Switches</span>
-        <div class="row g-2">
-          @for (quirk of quirks; track quirk.id) {
-            <div class="col-6">
-              <button
-                (click)="toggleQuirk(quirk.id)"
-                [class]="quirk.active 
-                  ? 'btn btn-dark w-100 py-2.5 px-3 rounded-3 d-flex justify-content-between align-items-center text-success border-success-subtle' 
-                  : 'btn btn-outline-dark w-100 py-2.5 px-3 rounded-3 d-flex justify-content-between align-items-center text-secondary border-secondary-subtle'"
-                style="font-size: 0.75rem; background-color: rgba(255,255,255,0.02); font-weight: 600;"
-              >
-                <span>{{ quirk.label }}</span>
-                <span [class]="quirk.active ? 'bg-success' : 'bg-transparent border border-secondary'" class="d-inline-block rounded-circle" style="width: 8px; height: 8px;"></span>
-              </button>
-            </div>
-          }
-        </div>
+      <div
+        [class]="isShieldEngaged
+          ? 'text-success border-success-subtle bg-success-subtle'
+          : 'text-secondary border-dark bg-dark'"
+        class="w-100 py-3 rounded-4 fw-bold text-center border p-2"
+        style="font-size:0.85rem; --bs-bg-opacity:0.05;">
+
+        <i class="bi bi-shield-fill-check me-2"></i>
+
+        {{ isShieldEngaged
+        ? 'Noise Cancellation Active'
+        : 'Waiting For Audio Input' }}
+
       </div>
-    }
 
-    @if (currentTab === 'connection') {
-      <div class="p-4 rounded-5" style="background-color: #141414; border: 1px solid #222;">
-        
-        <div class="row g-0 bg-black p-1 rounded-3 border border-dark text-center mb-3" style="font-size: 0.75rem;">
-          <div class="col-4 bg-success text-dark py-2 rounded-3 fw-bold">Bluetooth</div>
-          <div class="col-4 text-secondary py-2 fw-bold">Wi-Fi</div>
-          <div class="col-4 text-secondary py-2 fw-bold">USB</div>
-        </div>
-
-        <div class="bg-black border border-dark p-3 rounded-4 d-flex justify-content-between align-items-center mb-3">
-          <div class="d-flex align-items-center gap-3">
-            <i class="bi bi-bluetooth text-success h5 m-0"></i>
-            <div>
-              <div class="small fw-bold tracking-wide">Scanning complete</div>
-              <div class="text-muted" style="font-size: 0.65rem;">Found {{ pairedDevices.length }} active modules</div>
-            </div>
-          </div>
-          <button class="btn btn-dark btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background-color: #141414; border-color: #333;">
-            <i class="bi bi-arrow-clockwise text-muted"></i>
-          </button>
-        </div>
-
-        <div class="d-flex border-bottom border-dark mb-2" style="font-size: 0.75rem;">
-          <div class="border-bottom border-2 border-success pb-2 px-3 fw-bold text-success">Classic</div>
-          <div class="text-secondary pb-2 px-3 fw-bold">BLE</div>
-        </div>
-
-        <div class="d-flex flex-column gap-2 overflow-y-auto" style="max-height: 240px;">
-          @for (device of pairedDevices; track device.mac) {
-            <div class="d-flex justify-content-between align-items-center p-3 bg-black rounded-3 border border-dark">
-              <div class="d-flex align-items-center gap-3">
-                <i class="bi bi-cpu-fill" [class.text-success]="device.connected" class="text-secondary small"></i>
-                <div>
-                  <div class="small fw-bold" [class.text-success]="device.connected">{{ device.name }}</div>
-                  <div class="text-muted font-monospace" style="font-size: 0.6rem; letter-spacing: 0.5px;">{{ device.mac }}</div>
-                </div>
-              </div>
-              <span 
-                [class]="device.connected ? 'badge bg-success-subtle text-success border border-success px-2.5 py-1' : 'badge bg-dark text-secondary border border-secondary px-2.5 py-1'"
-                style="font-size: 0.65rem;"
-              >
-                {{ device.connected ? 'Connected' : 'Paired' }}
-              </span>
-            </div>
-          }
-        </div>
-      </div>
-    }
-
-    <div class="bg-success text-dark rounded-4 p-3 d-flex justify-content-between align-items-center shadow-sm">
-      <div class="d-flex align-items-center gap-3">
-        <i class="bi bi-lightning-charge-fill h5 m-0"></i>
-        <div>
-          <h3 class="fw-black tracking-wide m-0 text-uppercase" style="font-size: 0.75rem; font-weight: 900;">CONNECTED</h3>
-          <p class="m-0 opacity-75" style="font-size: 0.65rem; font-weight: 500;">Vehicle interface pipeline streaming active</p>
-        </div>
-      </div>
-      <div class="bg-dark text-success rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 24px; height: 24px; font-size: 0.7rem;">
-        ✓
-      </div>
     </div>
 
-    <div class="mt-2 pt-3 border-top border-secondary border-dashed text-center">
-      <h2 class="text-muted fw-bold mb-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">Tauri Simulation Arena</h2>
-      <div class="d-flex gap-2 justify-content-center">
-        <app-testing-button></app-testing-button>
-        <app-cabincomponent></app-cabincomponent>
+    <!-- Stats -->
+
+    <div class="row g-3">
+
+      <div class="col-6">
+
+        <div
+          class="p-4 rounded-4 h-100"
+          style="background:#141414;border:1px solid #222;">
+
+          <div class="small text-secondary text-uppercase mb-2">
+            Noise Reduction
+          </div>
+
+          <div class="display-6 fw-bold text-success">
+            87%
+          </div>
+
+        </div>
+
       </div>
+
+      <div class="col-6">
+
+        <div
+          class="p-4 rounded-4 h-100"
+          style="background:#141414;border:1px solid #222;">
+
+          <div class="small text-secondary text-uppercase mb-2">
+            Audio Clarity
+          </div>
+
+          <div class="display-6 fw-bold">
+            High
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Frequency Card -->
+
+    <div
+      class="p-4 rounded-4"
+      style="background:#141414;border:1px solid #222;">
+
+      <div
+        class="small text-secondary text-uppercase mb-3">
+
+        Live Frequency Tracking
+
+      </div>
+
+      <div
+        class="d-flex justify-content-between align-items-center">
+
+        <span class="text-secondary">
+          Dominant Frequency
+        </span>
+
+        <span class="fw-bold text-success">
+          {{ dominantHertz }} Hz
+        </span>
+
+      </div>
+
+    </div>
+
+    }
+
+    <!-- DEVICES PAGE -->
+
+    @if (currentTab === 'connection') {
+
+    <div class="p-4 rounded-5"
+         style="background:#141414;border:1px solid #222;">
+
+      <h3 class="fw-bold mb-1">
+        Connected Devices
+      </h3>
+
+      <div class="text-secondary small mb-4">
+        Bluetooth & Vehicle Audio Interfaces
+      </div>
+
+      <div
+        class="bg-black border border-dark p-3 rounded-4 d-flex justify-content-between align-items-center mb-3">
+
+        <div class="d-flex align-items-center gap-3">
+
+          <i class="bi bi-bluetooth text-success h5 m-0"></i>
+
+          <div>
+
+            <div class="small fw-bold">
+              Devices Found
+            </div>
+
+            <div class="text-muted"
+                 style="font-size:0.7rem;">
+
+              {{ pairedDevices.length }} available devices
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="d-flex flex-column gap-2">
+
+        @for (device of pairedDevices; track device.mac) {
+
+        <div
+          class="d-flex justify-content-between align-items-center p-3 bg-black rounded-4 border border-dark">
+
+          <div class="d-flex align-items-center gap-3">
+
+            <i
+              class="bi bi-cpu-fill"
+              [class.text-success]="device.connected">
+            </i>
+
+            <div>
+
+              <div
+                class="fw-bold"
+                [class.text-success]="device.connected">
+
+                {{ device.name }}
+
+              </div>
+
+              <div
+                class="text-muted"
+                style="font-size:0.65rem;">
+
+                {{ device.mac }}
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <span
+            [class]="device.connected
+            ? 'badge bg-success-subtle text-success border border-success'
+            : 'badge bg-dark text-secondary border border-secondary'">
+
+            {{ device.connected ? 'Connected' : 'Available' }}
+
+          </span>
+
+        </div>
+
+        }
+
+      </div>
+
+    </div>
+
+    }
+
+    <!-- Status -->
+
+    <div
+      class="bg-success text-dark rounded-4 p-3 d-flex justify-content-between align-items-center">
+
+      <div class="d-flex align-items-center gap-3">
+
+        <i class="bi bi-check-circle-fill h5 m-0"></i>
+
+        <div>
+
+          <h3
+            class="fw-bold m-0"
+            style="font-size:0.8rem;">
+
+            SYSTEM ONLINE
+
+          </h3>
+
+          <p
+            class="m-0 opacity-75"
+            style="font-size:0.7rem;">
+
+            Vehicle interface connected
+
+          </p>
+
+        </div>
+
+      </div>
+
+      <div
+        class="bg-dark text-success rounded-circle d-flex align-items-center justify-content-center fw-bold"
+        style="width:24px;height:24px;">
+
+        ✓
+
+      </div>
+
     </div>
 
   </div>
 
-  <nav class="fixed-bottom bg-black border-top border-dark px-2 py-2 d-flex justify-content-between align-items-center" style="max-width: 480px; margin: 0 auto; z-index: 1030;">
-    <button (click)="currentTab = 'home'" [class.text-success]="currentTab === 'home'" class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 text-secondary">
+  <!-- Bottom Navigation -->
+
+  <nav
+    class="fixed-bottom bg-black border-top border-dark px-2 py-2 d-flex justify-content-between align-items-center"
+    style="max-width:480px;margin:0 auto;z-index:1030;">
+
+    <button
+      (click)="currentTab = 'home'"
+      [class.text-success]="currentTab === 'home'"
+      class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 text-secondary">
+
       <i class="bi bi-house-door-fill h5 m-0"></i>
-      <span class="fw-bold tracking-wider text-uppercase" style="font-size: 0.6rem;">Home</span>
+
+      <span class="fw-bold text-uppercase"
+            style="font-size:0.6rem;">
+
+        Home
+
+      </span>
+
     </button>
-    <button (click)="currentTab = 'home'" class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 text-secondary">
-      <i class="bi bi-bar-chart-line-fill h5 m-0"></i>
-      <span class="fw-bold tracking-wider text-uppercase" style="font-size: 0.6rem;">Dashboard</span>
+
+    <button
+      class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 text-secondary">
+
+      <i class="bi bi-music-note-beamed h5 m-0"></i>
+
+      <span class="fw-bold text-uppercase"
+            style="font-size:0.6rem;">
+
+        Audio
+
+      </span>
+
     </button>
-    <button (click)="currentTab = 'connection'" [class.text-success]="currentTab === 'connection'" class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 text-secondary">
+
+    <button
+      (click)="currentTab = 'connection'"
+      [class.text-success]="currentTab === 'connection'"
+      class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 text-secondary">
+
       <i class="bi bi-bluetooth h5 m-0"></i>
-      <span class="fw-bold tracking-wider text-uppercase" style="font-size: 0.6rem;">Connection</span>
+
+      <span class="fw-bold text-uppercase"
+            style="font-size:0.6rem;">
+
+        Devices
+
+      </span>
+
     </button>
-    <button class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 text-secondary">
-      <i class="bi bi-car-front-fill h5 m-0"></i>
-      <span class="fw-bold tracking-wider text-uppercase" style="font-size: 0.6rem;">Garage</span>
+
+    <button
+      class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 text-secondary">
+
+      <i class="bi bi-gear-fill h5 m-0"></i>
+
+      <span class="fw-bold text-uppercase"
+            style="font-size:0.6rem;">
+
+        Settings
+
+      </span>
+
     </button>
+
   </nav>
 
   <router-outlet />
+
 </main>

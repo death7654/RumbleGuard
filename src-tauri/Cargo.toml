@@ -35,4 +35,6 @@ realfft = "3.5.0"
 
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 tauri-plugin-biometric = "2"
+ndk-context = "0.1.1"
+jni = { version = "0.21", default-features = false }
 

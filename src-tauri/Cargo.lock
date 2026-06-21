@@ -3332,6 +3332,8 @@ name = "rumbleguard"
 version = "0.1.0"
 dependencies = [
  "cpal",
+ "jni",
+ "ndk-context",
  "num-complex",
  "realfft",
  "rustfft",

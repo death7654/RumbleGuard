@@ -1,6 +1,8 @@
 mod dsp;
 use dsp::run_dsp_loop;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
 
 struct AudioStream(cpal::Stream);
 unsafe impl Send for AudioStream {}
@@ -8,6 +10,7 @@ unsafe impl Send for AudioStream {}
 pub struct AudioState {
     stream: std::sync::Mutex<Option<AudioStream>>,
     sample_tx: std::sync::Mutex<Option<std::sync::mpsc::Sender<Vec<f32>>>>,
+    pub shield_strength: Arc<AtomicU32>,
 }
 
 impl AudioState {
@@ -15,12 +18,13 @@ impl AudioState {
         Self {
             stream: std::sync::Mutex::new(None),
             sample_tx: std::sync::Mutex::new(None),
+            // Defaulting initialization parameters directly to 1.0 (100% full scale)
+            shield_strength: Arc::new(AtomicU32::new(1.0_f32.to_bits())),
         }
     }
 }
 
 // Called from MainActivity.kt during onCreate — before any IPC can fire.
-// Gives cpal the JVM pointer and Activity reference it needs to open audio streams.
 #[cfg(target_os = "android")]
 #[no_mangle]
 pub extern "C" fn Java_com_audiobytes_rumbleguard_MainActivity_initNdkContext(
@@ -35,6 +39,15 @@ pub extern "C" fn Java_com_audiobytes_rumbleguard_MainActivity_initNdkContext(
         );
     }
     println!("ndk-context initialized for cpal");
+}
+
+#[tauri::command]
+fn set_shield_strength(
+    strength: f32, 
+    state: tauri::State<'_, AudioState>
+) -> Result<(), String> {
+    state.shield_strength.store(strength.to_bits(), Ordering::Relaxed);
+    Ok(())
 }
 
 #[tauri::command]
@@ -56,7 +69,9 @@ fn start_recording(
     let (tx, rx) = std::sync::mpsc::channel::<Vec<f32>>();
     *state.sample_tx.lock().map_err(|e| e.to_string())? = Some(tx.clone());
 
-    std::thread::spawn(move || run_dsp_loop(rx, app, sample_rate));
+    // Pass the atomic shield modifier down into our active thread execution loop
+    let strength_clone = Arc::clone(&state.shield_strength);
+    std::thread::spawn(move || run_dsp_loop(rx, app, sample_rate, strength_clone));
 
     let config = supported_config.into();
     let stream = match sample_format {
@@ -108,7 +123,6 @@ fn check_mic_permission() -> bool { true }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Single builder — no double-default(), no ignored cfg block
     tauri::Builder::default()
         .manage(AudioState::new())
         .plugin(tauri_plugin_websocket::init())
@@ -122,7 +136,8 @@ pub fn run() {
             testing,
             start_recording,
             stop_recording,
-            check_mic_permission
+            check_mic_permission,
+            set_shield_strength 
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,34 +1,19 @@
 use realfft::RealFftPlanner;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
 
 pub const FFT_SIZE: usize = 2048;
 pub const HOP_SIZE: usize = FFT_SIZE / 2;
 
 const CABIN_NOISE_MIN_HZ: f32 = 20.0;
 const CABIN_NOISE_MAX_HZ: f32 = 500.0;
-
-// How long to spend measuring the ambient floor before applying any masking.
-// During this window the user should be in their normal quiet-car state
-// (engine off, no music). The result becomes the zero-point for all gain decisions.
 const CALIBRATION_SECS: f32 = 5.0;
-
-// EMA time constant for the active noise profile (after calibration).
-// 3 seconds: resistant to voice and short transients.
 const EMA_TIME_CONSTANT_SECS: f32 = 3.0;
-
-// Only trigger masking when noise exceeds the calibrated floor by this many dB.
-// Prevents ambient room hiss from causing any EQ movement at all.
 const MASKING_TRIGGER_DB: f32 = 6.0;
-
-// At this many dB above floor → apply maximum gain for that frequency stage.
 const MASKING_FULL_DB: f32 = 25.0;
-
-// Spectral flux gate: freeze EMA updates during rapid spectral changes
-// (voice, horn, door slam). Tune: lower = more frozen, higher = more permissive.
 const FLUX_GATE_THRESHOLD: f32 = 50.0;
-
-// Push EQ params to frontend at most once per this many seconds.
 const EMIT_INTERVAL_SECS: f32 = 2.0;
 
 #[derive(Serialize, Clone)]
@@ -43,8 +28,6 @@ pub struct DspFrame {
     pub bands: Vec<EqBand>,
     pub dominant_hz: f32,
     pub noise_db: f32,
-    // True while still measuring the ambient floor.
-    // Frontend should show "Calibrating..." during this phase.
     pub calibrating: bool,
 }
 
@@ -72,13 +55,6 @@ fn frequency_ceiling(freq_hz: f32) -> f32 {
     }
 }
 
-/// Compute masking gain relative to the calibrated floor.
-/// Zero gain when noise is at or below floor. Scales up only when
-/// something meaningfully louder than the calibrated ambient is detected.
-///
-/// excess_db = current_noise_db - floor_db
-///   < MASKING_TRIGGER_DB  → 0.0 (ambient or quieter, leave it alone)
-///   = MASKING_FULL_DB     → frequency_ceiling (maximum for this band)
 fn masking_gain_db(current_db: f32, floor_db: f32, freq_hz: f32) -> f32 {
     let excess = current_db - floor_db;
 
@@ -92,18 +68,19 @@ fn masking_gain_db(current_db: f32, floor_db: f32, freq_hz: f32) -> f32 {
     normalized * frequency_ceiling(freq_hz)
 }
 
+// Added live_strength multiplier direct scale into spectrum computation array maps
 fn analyze_cabin_spectrum(
     ema_spectrum: &[f32],
     floor_spectrum: &[f32],
     sample_rate: u32,
     calibrating: bool,
+    live_strength: f32,
 ) -> DspFrame {
     let bin_hz = sample_rate as f32 / FFT_SIZE as f32;
     let min_bin = ((CABIN_NOISE_MIN_HZ / bin_hz) as usize).max(1);
     let max_bin = ((CABIN_NOISE_MAX_HZ / bin_hz) as usize).min(ema_spectrum.len() - 1);
 
     if calibrating {
-        // During calibration just report current levels, no EQ applied
         return DspFrame {
             bands: vec![],
             dominant_hz: 0.0,
@@ -135,11 +112,14 @@ fn analyze_cabin_spectrum(
         .map(|(bin, magnitude)| {
             let freq = *bin as f32 * bin_hz;
             let current_db = magnitude_to_db(*magnitude);
-            // Floor for this specific bin from the calibration snapshot
             let floor_db = magnitude_to_db(floor_spectrum[*bin]);
+            
+            // Calculate base attenuation, then apply the slider factor from the backend
+            let calculated_gain = masking_gain_db(current_db, floor_db, freq);
+            
             EqBand {
                 frequency: freq,
-                gain_db: masking_gain_db(current_db, floor_db, freq),
+                gain_db: calculated_gain * live_strength, 
                 q: if freq < 120.0 { 1.5 } else { 2.5 },
             }
         })
@@ -160,6 +140,7 @@ pub fn run_dsp_loop(
     sample_rx: std::sync::mpsc::Receiver<Vec<f32>>,
     app_handle: AppHandle,
     sample_rate: u32,
+    shield_strength: Arc<AtomicU32>, 
 ) {
     let mut planner = RealFftPlanner::<f32>::new();
     let fft = planner.plan_fft_forward(FFT_SIZE);
@@ -172,10 +153,8 @@ pub fn run_dsp_loop(
     let spectrum_len = FFT_SIZE / 2 + 1;
     let mut ema_spectrum: Vec<f32> = vec![0.0; spectrum_len];
     let mut prev_magnitudes: Vec<f32> = vec![0.0; spectrum_len];
-    // Calibrated ambient floor — set at the end of the calibration phase
     let mut floor_spectrum: Vec<f32> = vec![0.0; spectrum_len];
 
-    // Calibration: accumulate frames for CALIBRATION_SECS, then snapshot
     let calibration_frames = (CALIBRATION_SECS / hop_secs).round() as usize;
     let mut frames_elapsed: usize = 0;
     let mut calibrating = true;
@@ -211,8 +190,6 @@ pub fn run_dsp_loop(
             } else {
                 let flux = spectral_flux(&magnitudes, &prev_magnitudes);
 
-                // During calibration: always update EMA to learn the ambient floor.
-                // After calibration: gate on flux to ignore transients.
                 if calibrating || flux < FLUX_GATE_THRESHOLD {
                     for (ema, &mag) in ema_spectrum.iter_mut().zip(magnitudes.iter()) {
                         *ema = alpha * mag + (1.0 - alpha) * *ema;
@@ -224,19 +201,25 @@ pub fn run_dsp_loop(
 
             frames_elapsed += 1;
 
-            // Snapshot the floor at the end of calibration
             if calibrating && frames_elapsed >= calibration_frames {
                 floor_spectrum.copy_from_slice(&ema_spectrum);
                 calibrating = false;
-                eprintln!(
-                    "Calibration complete. Ambient floor captured ({calibration_frames} frames)."
-                );
+                eprintln!("Calibration complete. Ambient floor captured ({calibration_frames} frames).");
             }
 
             frames_since_emit += 1;
             if frames_since_emit >= emit_every {
-                let dsp_frame =
-                    analyze_cabin_spectrum(&ema_spectrum, &floor_spectrum, sample_rate, calibrating);
+                // Read the live slider multiplier atomically without thread blocking overhead
+                let current_strength = f32::from_bits(shield_strength.load(Ordering::Relaxed));
+                
+                let dsp_frame = analyze_cabin_spectrum(
+                    &ema_spectrum, 
+                    &floor_spectrum, 
+                    sample_rate, 
+                    calibrating, 
+                    current_strength 
+                );
+                
                 app_handle.emit("dsp-frame", &dsp_frame).ok();
                 frames_since_emit = 0;
             }

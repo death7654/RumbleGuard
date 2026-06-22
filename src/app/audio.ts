@@ -56,6 +56,11 @@ export class CabinAudioService {
     });
   }
 
+  // 🎚️ FIX: Exposed public method for app.component.ts to dynamically update filter nodes
+  public updateLiveMultipliers(bands: EqBand[]): void {
+    this.applyEq(bands);
+  }
+
   private applyEq(bands: EqBand[]): void {
     if (!this.ctx) return;
     bands.forEach((band, i) => {

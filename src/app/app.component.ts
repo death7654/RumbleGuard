@@ -1,13 +1,22 @@
 import { Component, ElementRef, OnInit, OnDestroy, ViewChild, AfterViewInit, HostListener, ChangeDetectorRef } from '@angular/core';
-import { CabinAudioService, EqBand } from "./audio"; 
+import { CabinAudioService } from "./audio"; 
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { invoke } from '@tauri-apps/api/core';
+
+interface AudioTrack {
+  id: string;
+  title: string;
+  fileName: string;
+  duration: string;
+  type: string;
+}
 
 @Component({
   selector: "app-root",
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css",
 })
@@ -16,74 +25,122 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('canvasContainer', { static: false }) containerRef!: ElementRef<HTMLDivElement>;
   @ViewChild('testAudioPlayer', { static: false }) audioPlayerRef!: ElementRef<HTMLAudioElement>;
   
+  currentTab: 'home' | 'music' = 'home';
   isShieldEngaged = false;
+  isCalibrating = false;
   isPlaying = false;
   dominantHertz = 0;
+  noiseDb = -200;
   
-  private currentBands: EqBand[] = [];
+  // 🎚️ Shield Multiplier tracked on frontend & sent to Rust backend
+  shieldStrength = 1.0; 
+
+  private currentBands: any[] = [];
   private smoothedGains: number[] = [];
-  throttledBands: EqBand[] = [];
+  throttledBands: any[] = [];
+
+  trackList: AudioTrack[] = [
+    { id: 't1', title: 'Hooligang Reference Bass Mix', fileName: 'hooligang.mp3', duration: '3:42', type: 'Cabin Profile' },
+    { id: 't2', title: 'White Noise Isolation Sweep', fileName: 'whitenoise.mp3', duration: '5:00', type: 'Static Masking' },
+    { id: 't3', title: 'Low Frequency Pink Noise Frame', fileName: 'pinknoise.mp3', duration: '4:15', type: 'Vibration Counter' }
+  ];
+  selectedTrack: AudioTrack = this.trackList[0];
 
   private dspSubscription: Subscription | null = null;
   private animationFrameId!: number;
   private uiIntervalId: any = null;
-  private audioObjectUrl: string | null = null; // Prevent memory leaks
+  private audioObjectUrl: string | null = null;
 
-  constructor(private cabin: CabinAudioService, private http: HttpClient, private cdr: ChangeDetectorRef) {
-    const defaultFreqs = [60, 250, 1000, 4000, 16000];
-    this.throttledBands = defaultFreqs.map(f => ({ frequency: f, gain_db: 0, q: 1 }));
+  constructor(private cabin: CabinAudioService, private cdr: ChangeDetectorRef) {
+    const defaultFreqs = [60, 150, 240, 350, 480];
+    this.throttledBands = defaultFreqs.map(f => ({ frequency: f, gain_db: 0, q: 1.5 }));
   }
 
   ngOnInit() {
     this.dspSubscription = this.cabin.dspFrame$.subscribe({
-      next: (frame) => {
+      next: (frame: any) => {
         if (frame) {
           this.dominantHertz = frame.dominant_hz;
+          this.noiseDb = frame.noise_db;
+          this.isCalibrating = !!frame.calibrating;
           this.currentBands = frame.bands || [];
+
+          // Seamless synchronization to Web Audio API peaking engine filters layer
+          if (this.isShieldEngaged && !this.isCalibrating) {
+            this.cabin.updateLiveMultipliers(this.currentBands);
+          }
         }
       },
-      error: (err) => console.error("DSP Frame Pipe Exception:", err)
+      error: (err) => console.error("DSP Frame Subscription Error:", err)
     });
 
+    // Throttled UI display loop interface matrices state maps updates
     this.uiIntervalId = setInterval(() => {
-      if (this.isShieldEngaged && this.currentBands.length > 0) {
+      if (this.isShieldEngaged && !this.isCalibrating && this.currentBands.length > 0) {
         this.throttledBands = JSON.parse(JSON.stringify(this.currentBands));
         this.cdr.detectChanges(); 
       }
-    }, 500);
+    }, 400);
   }
 
   ngAfterViewInit() {
     this.resizeCanvasToContainer();
     this.initCanvasLoop(); 
-    
-    // 🔥 Securely fetch the music file as a safe raw blob to bypass origin restrictions
-    this.http.get('assets/hooligang.mp3', { responseType: 'blob' }).subscribe({
-      next: (blob) => {
-        this.audioObjectUrl = URL.createObjectURL(blob);
-        const audio = this.audioPlayerRef.nativeElement;
-        
-        audio.src = this.audioObjectUrl;
-        audio.load();
-        
-        // Wire up the safe asset directly to your filter graph
-        this.cabin.connectAudioElement(audio);
-      },
-      error: (err) => console.error("Failed to load local music file resource safely:", err)
-    });
+    this.loadTrackAsset(this.selectedTrack);
   }
 
   ngOnDestroy() {
     if (this.dspSubscription) this.dspSubscription.unsubscribe();
     if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
     if (this.uiIntervalId) clearInterval(this.uiIntervalId);
-    if (this.audioObjectUrl) URL.revokeObjectURL(this.audioObjectUrl); // Free system memory
-    this.cabin.destroy();
+    this.clearAudioObjectUrl();
   }
 
   @HostListener('window:resize')
   onWindowResize() {
     this.resizeCanvasToContainer();
+  }
+
+  // 🦀 CRITICAL BACKEND LINKAGE: Fires changes down to Rust loop
+  onStrengthChange() {
+    invoke('set_shield_strength', { strength: this.shieldStrength })
+      .catch(err => console.error("Tauri IPC Invocation Error:", err));
+  }
+
+  async loadTrackAsset(track: AudioTrack) {
+    try {
+      this.clearAudioObjectUrl();
+      const assetPath = `assets/${track.fileName}`;
+      
+      const response = await fetch(assetPath);
+      const blob = await response.blob();
+      
+      this.audioObjectUrl = URL.createObjectURL(blob);
+      const audio = this.audioPlayerRef.nativeElement;
+      
+      audio.src = this.audioObjectUrl;
+      audio.load();
+      
+      this.cabin.connectAudioElement(audio);
+      if (this.isPlaying) {
+        audio.play().catch(() => this.isPlaying = false);
+      }
+    } catch (err) {
+      console.error("Android Target Asset Loader Failure:", err);
+    }
+  }
+
+  selectTrack(track: AudioTrack) {
+    this.selectedTrack = track;
+    this.loadTrackAsset(track);
+    this.cdr.detectChanges();
+  }
+
+  private clearAudioObjectUrl() {
+    if (this.audioObjectUrl) {
+      URL.revokeObjectURL(this.audioObjectUrl);
+      this.audioObjectUrl = null;
+    }
   }
 
   togglePlayback() {
@@ -92,7 +149,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       audio.pause();
       this.isPlaying = false;
     } else {
-      audio.play().catch(err => console.error("Media Unlock Error:", err));
+      audio.play().catch(err => console.error("Audio Context Playback Lockout:", err));
       this.isPlaying = true;
     }
     this.cdr.detectChanges();
@@ -104,16 +161,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.isShieldEngaged) {
       try {
         await this.cabin.startListening();
-        await this.cabin.startRecording();
+        await invoke('start_recording');
       } catch (err) {
         console.error("Shield activation failure:", err);
         this.isShieldEngaged = false;
       }
     } else {
       try {
-        await this.cabin.stopRecording();
+        await invoke('stop_recording');
       } catch (err) {}
       this.dominantHertz = 0;
+      this.noiseDb = -200;
+      this.isCalibrating = false;
       this.currentBands = [];
       this.throttledBands.forEach(b => b.gain_db = 0);
     }
@@ -149,7 +208,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke(); 
       }
 
-      if (this.isShieldEngaged && this.currentBands.length > 0) {
+      if (this.isShieldEngaged && !this.isCalibrating && this.currentBands.length > 0) {
         const totalPoints = this.currentBands.length;
         if (this.smoothedGains.length !== totalPoints) {
           this.smoothedGains = new Array(totalPoints).fill(0);
@@ -165,12 +224,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         for (let i = 0; i < totalPoints; i++) {
           const band = this.currentBands[i];
           const x = ((band.frequency - minFreq) / freqRange) * canvas.width;
-          let normalizedGain = (band.gain_db + 30) / 45; 
+          let normalizedGain = (band.gain_db) / 6.0; // Scaled to frequency_ceiling max
           
           const deltaHz = Math.abs(band.frequency - this.dominantHertz);
-          if (deltaHz < 150 && this.dominantHertz > 0) {
-            const proximityFactor = 1.0 - (deltaHz / 150);
-            normalizedGain += Math.sin(timeFactor + i) * 0.25 * proximityFactor;
+          if (deltaHz < 100 && this.dominantHertz > 0) {
+            const proximityFactor = 1.0 - (deltaHz / 100);
+            normalizedGain += Math.sin(timeFactor + i) * 0.15 * proximityFactor;
           }
           
           this.smoothedGains[i] += (normalizedGain - this.smoothedGains[i]) * 0.25;

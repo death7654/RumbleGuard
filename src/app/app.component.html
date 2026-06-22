@@ -1,161 +1,186 @@
-<main
-  class="min-h-screen bg-black text-white py-4 px-3 pb-5 select-none w-100"
-  style="max-width: 480px; margin: 0 auto"
->
+<main class="min-h-screen bg-black text-white py-4 px-3 pb-5 select-none w-100"
+      style="max-width: 480px; margin: 0 auto;">
+
   <header class="d-flex justify-content-between align-items-center mb-4 px-2">
     <div>
       <h1 class="h4 fw-bold text-white m-0">RumbleGuard</h1>
       <div class="text-secondary small">Smart Cabin Noise Cancellation</div>
     </div>
-    <div
-      class="badge bg-success-subtle text-success px-2 py-1 rounded-pill small"
-      style="font-size: 0.7rem"
-    >
-      ✓ SYSTEM ONLINE
+    
+    <div *ngIf="!isShieldEngaged" class="badge bg-dark text-secondary px-2 py-1 rounded-pill small" style="font-size: 0.7rem;">
+      ○ STANDBY
+    </div>
+    <div *ngIf="isShieldEngaged && isCalibrating" class="badge bg-warning-subtle text-warning px-2 py-1 rounded-pill small pulse-badge" style="font-size: 0.7rem;">
+      ⏳ CALIBRATING AIR FLOOR
+    </div>
+    <div *ngIf="isShieldEngaged && !isCalibrating" class="badge bg-success-subtle text-success px-2 py-1 rounded-pill small" style="font-size: 0.7rem;">
+      ✓ SHIELD ONLINE
     </div>
   </header>
 
-  <div class="d-flex flex-column gap-3 mb-4">
-    <div
-      class="p-4 rounded-5"
-      style="background: #141414; border: 1px solid #222"
-    >
-      <div class="text-center mb-4">
-        <div
-          [class]="
-            isShieldEngaged
-              ? 'badge bg-success-subtle text-success px-3 py-2 rounded-pill'
-              : 'badge bg-dark text-secondary px-3 py-2 rounded-pill'
-          "
-        >
-          {{ isShieldEngaged ? "ACTIVE" : "STANDBY" }}
-        </div>
-        <h2 class="mt-3 fw-bold">Acoustic Shield</h2>
-        <p class="text-secondary mb-4">
-          Real-Time Cabin Vibration Cancellation
-        </p>
+  <div class="d-flex flex-column gap-3 mb-5 pb-4">
 
-        <button
-          (click)="toggleShield()"
-          [class]="
-            isShieldEngaged
-              ? 'btn-outline-danger text-danger'
-              : 'btn-success text-dark'
-          "
-          class="btn w-100 py-3 rounded-4 fw-bold text-uppercase mb-2 d-flex align-items-center justify-content-center gap-2"
-          style="
-            font-size: 0.95rem;
-            border-width: 2px;
-            transition: all 0.2s ease-in-out;
-          "
-        >
-          <i
-            [class]="
-              isShieldEngaged ? 'bi bi-power fs-5' : 'bi bi-shield-fill fs-5'
-            "
-          ></i>
-          {{ isShieldEngaged ? "Disengage Shield" : "Engage Acoustic Shield" }}
-        </button>
-      </div>
+    <ng-container *ngIf="currentTab === 'home'">
+      
+      <div class="p-4 rounded-5 card-vibe">
+        <div class="text-center mb-4">
+          <div [class]="isShieldEngaged ? 'badge bg-success-subtle text-success px-3 py-2 rounded-pill' : 'badge bg-dark text-secondary px-3 py-2 rounded-pill'">
+            {{ isShieldEngaged ? (isCalibrating ? "PROFILING ENVIRONMENT..." : "ACTIVE ACTIVE") : "STANDBY" }}
+          </div>
+          <h2 class="mt-3 fw-bold">Acoustic Shield</h2>
+          <p class="text-secondary mb-4">Real-Time Cabin Vibration Cancellation</p>
 
-      <div
-        class="rounded-4 p-3 mb-3"
-        style="background: #0b0b0b; border: 1px solid #222"
-      >
-        <div class="small text-secondary text-uppercase fw-bold mb-3">
-          Live Audio Spectrum
-        </div>
-        <div
-          #canvasContainer
-          class="position-relative rounded-4 overflow-hidden"
-          style="height: 140px"
-        >
-          <canvas
-            #spectrogramCanvas
-            height="140"
-            class="w-100 h-100 d-block"
-          ></canvas>
-        </div>
-      </div>
-
-      <div
-        class="d-flex justify-content-between align-items-center p-2 mb-2 bg-black rounded-3 border border-dark px-3"
-      >
-        <span class="text-secondary small">Dominant Frequency:</span>
-        <span class="fw-bold text-success"
-          >{{ dominantHertz | number: "1.2-2" }} Hz</span
-        >
-      </div>
-    </div>
-
-    <div
-      class="p-4 rounded-5"
-      style="background: #141414; border: 1px solid #222"
-    >
-      <div class="small text-secondary text-uppercase fw-bold mb-2">
-        Acoustic Testing Sandbox
-      </div>
-      <p class="text-muted small mb-4">
-        Verify the masking filters. When the shield is engaged, native DSP
-        filters alter the output stream.
-      </p>
-
-      <div class="d-flex justify-content-center mb-4">
-        <button
-          (click)="togglePlayback()"
-          [class.bg-success]="!isPlaying"
-          [class.bg-warning]="isPlaying"
-          class="btn rounded-circle d-flex align-items-center justify-content-center shadow-lg text-black"
-          style="
-            width: 72px;
-            height: 72px;
-            transition: all 0.2s ease;
-            border: none;
-          "
-        >
-          <i
-            [class]="
-              isPlaying ? 'bi bi-pause-fill fs-1' : 'bi bi-play-fill fs-1'
-            "
-            style="margin-left: {{ isPlaying ? '0px' : '4px' }}"
-          ></i>
-        </button>
-      </div>
-
-      <div
-        class="rounded-4 p-3"
-        style="background: #0b0b0b; border: 1px solid #222"
-      >
-        <div
-          class="small text-secondary text-uppercase fw-bold mb-2"
-          style="font-size: 0.75rem"
-        >
-          Active DSP Attenuation Matrix
+          <button 
+            (click)="toggleShield()"
+            [class]="isShieldEngaged ? 'btn-outline-danger text-danger' : 'btn-success text-dark'"
+            class="btn w-100 py-3 rounded-4 fw-bold text-uppercase mb-2 d-flex align-items-center justify-content-center gap-2 main-toggle-btn">
+            <i [class]="isShieldEngaged ? 'bi bi-power fs-5' : 'bi bi-shield-fill fs-5'"></i>
+            {{ isShieldEngaged ? "Disengage Shield" : "Engage Acoustic Shield" }}
+          </button>
         </div>
 
-        <div class="d-flex flex-column gap-2">
-          <div
-            *ngFor="let band of throttledBands; let i = index"
-            class="d-flex justify-content-between align-items-center font-monospace small border-bottom border-dark pb-1"
-          >
-            <span class="text-secondary"
-              >Band {{ i + 1 }} ({{ band.frequency }}Hz):</span
-            >
-            <span
-              [class.text-success]="isShieldEngaged && band.gain_db !== 0"
-              [class.text-muted]="!isShieldEngaged"
-            >
-              {{ isShieldEngaged ? (band.gain_db > 0 ? "+" : "") : ""
-              }}{{
-                isShieldEngaged ? (band.gain_db | number: "1.2-2") : "0.00"
-              }}
-              dB
+        <div *ngIf="isShieldEngaged" class="mt-3 p-3 rounded-4 bg-black border border-dark text-start animate-fade-in">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="small text-secondary text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+              Shield Intensity Factor
             </span>
+            <span class="font-monospace text-success fw-bold small">
+              {{ (shieldStrength * 100) | number:'1.0-0' }}%
+            </span>
+          </div>
+          
+          <input 
+            type="range" 
+            min="0" 
+            max="1.5" 
+            step="0.1" 
+            [(ngModel)]="shieldStrength"
+            (input)="onStrengthChange()"
+            class="form-range custom-slider w-100">
+            
+          <div class="text-muted mt-2" style="font-size: 0.65rem; line-height: 1.3;">
+            Modifies attenuation multipliers inside the Rust FFT loop. Past 100% introduces diagnostic audio coloration.
+          </div>
+        </div>
+
+        <div class="rounded-4 p-3 my-3 bg-matrix border border-dark">
+          <div class="small text-secondary text-uppercase fw-bold mb-3 d-flex justify-content-between">
+            <span>Live Audio Spectrum</span>
+            <span *ngIf="isShieldEngaged && !isCalibrating" class="text-success font-monospace live-indicator">● LIVE</span>
+            <span *ngIf="isShieldEngaged && isCalibrating" class="text-warning font-monospace live-indicator">CALIBRATING...</span>
+          </div>
+          
+          <div #canvasContainer class="position-relative rounded-4 overflow-hidden display-box" style="height: 140px;">
+            <div *ngIf="isShieldEngaged && isCalibrating" class="calibration-overlay d-flex flex-column align-items-center justify-content-center gap-2">
+              <div class="spinner-border text-warning spinner-border-sm" role="status"></div>
+              <div class="font-monospace text-warning text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">
+                Learning Cabin Ambient Noise Floor
+              </div>
+            </div>
+            
+            <canvas #spectrogramCanvas height="140" class="w-100 h-100 d-block"></canvas>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center p-2 bg-black rounded-3 border border-dark px-3 mb-2">
+          <span class="text-secondary small">Dominant Resonance:</span>
+          <span class="fw-bold text-success font-monospace">{{ isShieldEngaged && !isCalibrating ? (dominantHertz | number:'1.1-1') + ' Hz' : '---' }}</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center p-2 bg-black rounded-3 border border-dark px-3">
+          <span class="text-secondary small">Noise Level (RMS):</span>
+          <span class="fw-bold text-success font-monospace">{{ isShieldEngaged && !isCalibrating ? (noiseDb | number:'1.1-1') + ' dB' : '---' }}</span>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-5 card-vibe">
+        <div class="small text-secondary text-uppercase fw-bold mb-2">Acoustic Testing Sandbox</div>
+        <p class="text-muted small mb-3">
+          Verify Web Audio DSP node mutations against real files.
+        </p>
+        
+        <div class="p-3 rounded-4 mb-3 bg-black border border-dark d-flex align-items-center gap-3">
+          <div class="bg-dark text-success p-2 rounded-3">
+            <i class="bi bi-music-note-beamed fs-4"></i>
+          </div>
+          <div class="overflow-hidden">
+            <div class="fw-bold text-truncate text-white small">{{ selectedTrack.title }}</div>
+            <div class="text-secondary font-monospace" style="font-size:0.7rem;">{{ selectedTrack.fileName }}</div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-center mb-4">
+          <button 
+            (click)="togglePlayback()" 
+            [class.bg-success]="!isPlaying"
+            [class.bg-warning]="isPlaying"
+            class="btn rounded-circle d-flex align-items-center justify-content-center shadow-lg text-black playback-circle"
+            style="width: 64px; height: 64px; border: none; transition: all 0.2s ease;">
+            <i [class]="isPlaying ? 'bi bi-pause-fill fs-2' : 'bi bi-play-fill fs-2'" [style.margin-left]="isPlaying ? '0px' : '3px'"></i>
+          </button>
+        </div>
+
+        <div class="rounded-4 p-3 bg-matrix border border-dark">
+          <div class="small text-secondary text-uppercase fw-bold mb-2" style="font-size: 0.72rem;">Active WebAudio Attenuation Matrix</div>
+          <div class="d-flex flex-column gap-2">
+            <div *ngFor="let band of throttledBands; let i = index" class="d-flex justify-content-between align-items-center font-monospace small border-bottom border-dark pb-1">
+              <span class="text-secondary">Band {{i+1}} ({{band.frequency | number:'1.0-0'}}Hz):</span>
+              <span [class.text-success]="isShieldEngaged && band.gain_db !== 0" [class.text-muted]="!isShieldEngaged || band.gain_db === 0">
+                {{ isShieldEngaged ? (band.gain_db > 0 ? '+' : '') : '' }}{{ isShieldEngaged ? (band.gain_db | number:'1.2-2') : '0.00' }} dB
+              </span>
+            </div>
           </div>
         </div>
       </div>
+    </ng-container>
 
-      <audio #testAudioPlayer loop class="d-none"></audio>
-    </div>
+    <ng-container *ngIf="currentTab === 'music'">
+      <div class="p-4 rounded-5 card-vibe">
+        <h3 class="h5 fw-bold mb-1 text-white">Audio Selection Deck</h3>
+        <p class="text-secondary small mb-4">Select an environment sound mask profile or test track to process.</p>
+
+        <div class="d-flex flex-column gap-2">
+          <div *ngFor="let track of trackList" 
+               (click)="selectTrack(track)"
+               [class.border-success]="selectedTrack.id === track.id"
+               class="p-3 rounded-4 bg-black border d-flex justify-content-between align-items-center library-track-item"
+               style="cursor: pointer; border-color: #222; transition: all 0.2s ease;">
+            <div class="d-flex align-items-center gap-3">
+              <div [class.text-success]="selectedTrack.id === track.id" class="text-secondary">
+                <i [class]="selectedTrack.id === track.id && isPlaying ? 'bi bi-soundwave fs-4' : 'bi bi-music-note fs-4'"></i>
+              </div>
+              <div>
+                <div class="fw-bold small" [class.text-success]="selectedTrack.id === track.id">{{ track.title }}</div>
+                <div class="text-muted text-uppercase font-monospace" style="font-size:0.65rem;">{{ track.duration }} | {{ track.type }}</div>
+              </div>
+            </div>
+            <div *ngIf="selectedTrack.id === track.id" class="small fw-bold text-success font-monospace" style="font-size:0.75rem;">
+              LOADED
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
   </div>
+
+  <audio #testAudioPlayer loop></audio>
+
+  <nav class="fixed-bottom bg-black border-top border-dark px-2 py-2 d-flex justify-content-between align-items-center navbar-dock"
+       style="max-width:480px; margin: 0 auto; z-index:1030;">
+    <button (click)="currentTab = 'home'"
+            [class.text-success]="currentTab === 'home'"
+            [class.text-secondary]="currentTab !== 'home'"
+            class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 nav-dock-btn">
+      <i class="bi bi-speedometer2 h5 m-0"></i>
+      <span class="fw-bold text-uppercase" style="font-size:0.6rem;">Shield HUD</span>
+    </button>
+
+    <button (click)="currentTab = 'music'"
+            [class.text-success]="currentTab === 'music'"
+            [class.text-secondary]="currentTab !== 'music'"
+            class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 nav-dock-btn">
+      <i class="bi bi-disc-fill h5 m-0"></i>
+      <span class="fw-bold text-uppercase" style="font-size:0.6rem;">Music Selection</span>
+    </button>
+  </nav>
 </main>

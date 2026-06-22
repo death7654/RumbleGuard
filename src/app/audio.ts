@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { Subject, Observable } from 'rxjs';
 
-interface EqBand {
+export interface EqBand {
   frequency: number;
   gain_db: number;
   q: number;

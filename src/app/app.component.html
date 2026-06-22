@@ -1,380 +1,161 @@
-<main class="min-h-screen bg-black text-white py-4 px-3 pb-5 select-none w-100"
-      style="max-width: 480px; margin: 0 auto;">
-
-  <!-- Header -->
+<main
+  class="min-h-screen bg-black text-white py-4 px-3 pb-5 select-none w-100"
+  style="max-width: 480px; margin: 0 auto"
+>
   <header class="d-flex justify-content-between align-items-center mb-4 px-2">
-
     <div>
-      <h1 class="h4 fw-bold text-white m-0">
-        Acoustic Shield
-      </h1>
-
-      <div class="text-secondary small">
-        Smart Cabin Noise Cancellation
-      </div>
+      <h1 class="h4 fw-bold text-white m-0">RumbleGuard</h1>
+      <div class="text-secondary small">Smart Cabin Noise Cancellation</div>
     </div>
-
-    <button
-      class="btn btn-dark rounded-circle d-flex align-items-center justify-content-center"
-      style="width:40px;height:40px;border-color:#2b2b2b;background:#141414;">
-      <i class="bi bi-gear-fill text-secondary"></i>
-    </button>
-
+    <div
+      class="badge bg-success-subtle text-success px-2 py-1 rounded-pill small"
+      style="font-size: 0.7rem"
+    >
+      ✓ SYSTEM ONLINE
+    </div>
   </header>
 
-  <div class="d-flex flex-column gap-3 mb-5">
-
-    <!-- HOME -->
-    @if (currentTab === 'home') {
-
-    <div class="p-4 rounded-5"
-         style="background:#141414;border:1px solid #222;">
-
+  <div class="d-flex flex-column gap-3 mb-4">
+    <div
+      class="p-4 rounded-5"
+      style="background: #141414; border: 1px solid #222"
+    >
       <div class="text-center mb-4">
-
         <div
-          [class]="isShieldEngaged
-          ? 'badge bg-success-subtle text-success px-3 py-2 rounded-pill'
-          : 'badge bg-dark text-secondary px-3 py-2 rounded-pill'">
-
-          {{ isShieldEngaged ? 'ACTIVE' : 'STANDBY' }}
-
+          [class]="
+            isShieldEngaged
+              ? 'badge bg-success-subtle text-success px-3 py-2 rounded-pill'
+              : 'badge bg-dark text-secondary px-3 py-2 rounded-pill'
+          "
+        >
+          {{ isShieldEngaged ? "ACTIVE" : "STANDBY" }}
         </div>
-
-        <h2 class="mt-3 fw-bold">
-          Acoustic Shield
-        </h2>
-
-        <p class="text-secondary mb-0">
+        <h2 class="mt-3 fw-bold">Acoustic Shield</h2>
+        <p class="text-secondary mb-4">
           Real-Time Cabin Vibration Cancellation
         </p>
 
+        <button
+          (click)="toggleShield()"
+          [class]="
+            isShieldEngaged
+              ? 'btn-outline-danger text-danger'
+              : 'btn-success text-dark'
+          "
+          class="btn w-100 py-3 rounded-4 fw-bold text-uppercase mb-2 d-flex align-items-center justify-content-center gap-2"
+          style="
+            font-size: 0.95rem;
+            border-width: 2px;
+            transition: all 0.2s ease-in-out;
+          "
+        >
+          <i
+            [class]="
+              isShieldEngaged ? 'bi bi-power fs-5' : 'bi bi-shield-fill fs-5'
+            "
+          ></i>
+          {{ isShieldEngaged ? "Disengage Shield" : "Engage Acoustic Shield" }}
+        </button>
       </div>
-
-      <!-- Spectrum -->
 
       <div
         class="rounded-4 p-3 mb-3"
-        style="background:#0b0b0b;border:1px solid #222;">
-
-        <div
-          class="small text-secondary text-uppercase fw-bold mb-3">
-
+        style="background: #0b0b0b; border: 1px solid #222"
+      >
+        <div class="small text-secondary text-uppercase fw-bold mb-3">
           Live Audio Spectrum
-
         </div>
-
         <div
           #canvasContainer
           class="position-relative rounded-4 overflow-hidden"
-          style="height:140px;">
-
+          style="height: 140px"
+        >
           <canvas
             #spectrogramCanvas
             height="140"
-            class="w-100 h-100 d-block">
-          </canvas>
-
+            class="w-100 h-100 d-block"
+          ></canvas>
         </div>
-
       </div>
 
       <div
-        [class]="isShieldEngaged
-          ? 'text-success border-success-subtle bg-success-subtle'
-          : 'text-secondary border-dark bg-dark'"
-        class="w-100 py-3 rounded-4 fw-bold text-center border p-2"
-        style="font-size:0.85rem; --bs-bg-opacity:0.05;">
-
-        <i class="bi bi-shield-fill-check me-2"></i>
-
-        {{ isShieldEngaged
-        ? 'Noise Cancellation Active'
-        : 'Waiting For Audio Input' }}
-
+        class="d-flex justify-content-between align-items-center p-2 mb-2 bg-black rounded-3 border border-dark px-3"
+      >
+        <span class="text-secondary small">Dominant Frequency:</span>
+        <span class="fw-bold text-success"
+          >{{ dominantHertz | number: "1.2-2" }} Hz</span
+        >
       </div>
-
     </div>
-
-    <!-- Stats -->
-
-    <div class="row g-3">
-
-      <div class="col-6">
-
-        <div
-          class="p-4 rounded-4 h-100"
-          style="background:#141414;border:1px solid #222;">
-
-          <div class="small text-secondary text-uppercase mb-2">
-            Noise Reduction
-          </div>
-
-          <div class="display-6 fw-bold text-success">
-            87%
-          </div>
-
-        </div>
-
-      </div>
-
-      <div class="col-6">
-
-        <div
-          class="p-4 rounded-4 h-100"
-          style="background:#141414;border:1px solid #222;">
-
-          <div class="small text-secondary text-uppercase mb-2">
-            Audio Clarity
-          </div>
-
-          <div class="display-6 fw-bold">
-            High
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
-
-    <!-- Frequency Card -->
 
     <div
-      class="p-4 rounded-4"
-      style="background:#141414;border:1px solid #222;">
+      class="p-4 rounded-5"
+      style="background: #141414; border: 1px solid #222"
+    >
+      <div class="small text-secondary text-uppercase fw-bold mb-2">
+        Acoustic Testing Sandbox
+      </div>
+      <p class="text-muted small mb-4">
+        Verify the masking filters. When the shield is engaged, native DSP
+        filters alter the output stream.
+      </p>
 
-      <div
-        class="small text-secondary text-uppercase mb-3">
-
-        Live Frequency Tracking
-
+      <div class="d-flex justify-content-center mb-4">
+        <button
+          (click)="togglePlayback()"
+          [class.bg-success]="!isPlaying"
+          [class.bg-warning]="isPlaying"
+          class="btn rounded-circle d-flex align-items-center justify-content-center shadow-lg text-black"
+          style="
+            width: 72px;
+            height: 72px;
+            transition: all 0.2s ease;
+            border: none;
+          "
+        >
+          <i
+            [class]="
+              isPlaying ? 'bi bi-pause-fill fs-1' : 'bi bi-play-fill fs-1'
+            "
+            style="margin-left: {{ isPlaying ? '0px' : '4px' }}"
+          ></i>
+        </button>
       </div>
 
       <div
-        class="d-flex justify-content-between align-items-center">
-
-        <span class="text-secondary">
-          Dominant Frequency
-        </span>
-
-        <span class="fw-bold text-success">
-          {{ dominantHertz }} Hz
-        </span>
-
-      </div>
-
-    </div>
-
-    }
-
-    <!-- DEVICES PAGE -->
-
-    @if (currentTab === 'connection') {
-
-    <div class="p-4 rounded-5"
-         style="background:#141414;border:1px solid #222;">
-
-      <h3 class="fw-bold mb-1">
-        Connected Devices
-      </h3>
-
-      <div class="text-secondary small mb-4">
-        Bluetooth & Vehicle Audio Interfaces
-      </div>
-
-      <div
-        class="bg-black border border-dark p-3 rounded-4 d-flex justify-content-between align-items-center mb-3">
-
-        <div class="d-flex align-items-center gap-3">
-
-          <i class="bi bi-bluetooth text-success h5 m-0"></i>
-
-          <div>
-
-            <div class="small fw-bold">
-              Devices Found
-            </div>
-
-            <div class="text-muted"
-                 style="font-size:0.7rem;">
-
-              {{ pairedDevices.length }} available devices
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-      <div class="d-flex flex-column gap-2">
-
-        @for (device of pairedDevices; track device.mac) {
-
+        class="rounded-4 p-3"
+        style="background: #0b0b0b; border: 1px solid #222"
+      >
         <div
-          class="d-flex justify-content-between align-items-center p-3 bg-black rounded-4 border border-dark">
+          class="small text-secondary text-uppercase fw-bold mb-2"
+          style="font-size: 0.75rem"
+        >
+          Active DSP Attenuation Matrix
+        </div>
 
-          <div class="d-flex align-items-center gap-3">
-
-            <i
-              class="bi bi-cpu-fill"
-              [class.text-success]="device.connected">
-            </i>
-
-            <div>
-
-              <div
-                class="fw-bold"
-                [class.text-success]="device.connected">
-
-                {{ device.name }}
-
-              </div>
-
-              <div
-                class="text-muted"
-                style="font-size:0.65rem;">
-
-                {{ device.mac }}
-
-              </div>
-
-            </div>
-
+        <div class="d-flex flex-column gap-2">
+          <div
+            *ngFor="let band of throttledBands; let i = index"
+            class="d-flex justify-content-between align-items-center font-monospace small border-bottom border-dark pb-1"
+          >
+            <span class="text-secondary"
+              >Band {{ i + 1 }} ({{ band.frequency }}Hz):</span
+            >
+            <span
+              [class.text-success]="isShieldEngaged && band.gain_db !== 0"
+              [class.text-muted]="!isShieldEngaged"
+            >
+              {{ isShieldEngaged ? (band.gain_db > 0 ? "+" : "") : ""
+              }}{{
+                isShieldEngaged ? (band.gain_db | number: "1.2-2") : "0.00"
+              }}
+              dB
+            </span>
           </div>
-
-          <span
-            [class]="device.connected
-            ? 'badge bg-success-subtle text-success border border-success'
-            : 'badge bg-dark text-secondary border border-secondary'">
-
-            {{ device.connected ? 'Connected' : 'Available' }}
-
-          </span>
-
         </div>
-
-        }
-
       </div>
 
+      <audio #testAudioPlayer loop class="d-none"></audio>
     </div>
-
-    }
-
-    <!-- Status -->
-
-    <div
-      class="bg-success text-dark rounded-4 p-3 d-flex justify-content-between align-items-center">
-
-      <div class="d-flex align-items-center gap-3">
-
-        <i class="bi bi-check-circle-fill h5 m-0"></i>
-
-        <div>
-
-          <h3
-            class="fw-bold m-0"
-            style="font-size:0.8rem;">
-
-            SYSTEM ONLINE
-
-          </h3>
-
-          <p
-            class="m-0 opacity-75"
-            style="font-size:0.7rem;">
-
-            Vehicle interface connected
-
-          </p>
-
-        </div>
-
-      </div>
-
-      <div
-        class="bg-dark text-success rounded-circle d-flex align-items-center justify-content-center fw-bold"
-        style="width:24px;height:24px;">
-
-        ✓
-
-      </div>
-
-    </div>
-
   </div>
-
-  <!-- Bottom Navigation -->
-
-  <nav
-    class="fixed-bottom bg-black border-top border-dark px-2 py-2 d-flex justify-content-between align-items-center"
-    style="max-width:480px;margin:0 auto;z-index:1030;">
-
-    <button
-      (click)="currentTab = 'home'"
-      [class.text-success]="currentTab === 'home'"
-      class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 text-secondary">
-
-      <i class="bi bi-house-door-fill h5 m-0"></i>
-
-      <span class="fw-bold text-uppercase"
-            style="font-size:0.6rem;">
-
-        Home
-
-      </span>
-
-    </button>
-
-    <button
-      class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 text-secondary">
-
-      <i class="bi bi-music-note-beamed h5 m-0"></i>
-
-      <span class="fw-bold text-uppercase"
-            style="font-size:0.6rem;">
-
-        Audio
-
-      </span>
-
-    </button>
-
-    <button
-      (click)="currentTab = 'connection'"
-      [class.text-success]="currentTab === 'connection'"
-      class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 text-secondary">
-
-      <i class="bi bi-bluetooth h5 m-0"></i>
-
-      <span class="fw-bold text-uppercase"
-            style="font-size:0.6rem;">
-
-        Devices
-
-      </span>
-
-    </button>
-
-    <button
-      class="btn border-0 flex-grow-1 d-flex flex-column align-items-center gap-1 text-secondary">
-
-      <i class="bi bi-gear-fill h5 m-0"></i>
-
-      <span class="fw-bold text-uppercase"
-            style="font-size:0.6rem;">
-
-        Settings
-
-      </span>
-
-    </button>
-
-  </nav>
-
-  <router-outlet />
-
 </main>

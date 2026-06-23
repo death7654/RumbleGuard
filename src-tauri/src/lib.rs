@@ -3,13 +3,16 @@ use dsp::run_dsp_loop;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use ringbuf::{SharedRb, storage::Heap, traits::*};
 
 struct AudioStream(cpal::Stream);
 unsafe impl Send for AudioStream {}
 
+type AudioConsumer = ringbuf::wrap::CachingCons<std::sync::Arc<ringbuf::SharedRb<ringbuf::storage::Heap<f32>>>>;
+
 pub struct AudioState {
     stream: std::sync::Mutex<Option<AudioStream>>,
-    sample_tx: std::sync::Mutex<Option<std::sync::mpsc::Sender<Vec<f32>>>>,
+    audio_consumer: std::sync::Mutex<Option<AudioConsumer>>,
     pub shield_strength: Arc<AtomicU32>,
 }
 
@@ -17,14 +20,12 @@ impl AudioState {
     fn new() -> Self {
         Self {
             stream: std::sync::Mutex::new(None),
-            sample_tx: std::sync::Mutex::new(None),
-            // Defaulting initialization parameters directly to 1.0 (100% full scale)
+            audio_consumer: std::sync::Mutex::new(None),
             shield_strength: Arc::new(AtomicU32::new(1.0_f32.to_bits())),
         }
     }
 }
 
-// Called from MainActivity.kt during onCreate — before any IPC can fire.
 #[cfg(target_os = "android")]
 #[no_mangle]
 pub extern "C" fn Java_com_audiobytes_rumbleguard_MainActivity_initNdkContext(
@@ -42,19 +43,13 @@ pub extern "C" fn Java_com_audiobytes_rumbleguard_MainActivity_initNdkContext(
 }
 
 #[tauri::command]
-fn set_shield_strength(
-    strength: f32, 
-    state: tauri::State<'_, AudioState>
-) -> Result<(), String> {
+fn set_shield_strength(strength: f32, state: tauri::State<'_, AudioState>) -> Result<(), String> {
     state.shield_strength.store(strength.to_bits(), Ordering::Relaxed);
     Ok(())
 }
 
 #[tauri::command]
-fn start_recording(
-    app: tauri::AppHandle,
-    state: tauri::State<'_, AudioState>,
-) -> Result<(), String> {
+fn start_recording(app: tauri::AppHandle, state: tauri::State<'_, AudioState>) -> Result<(), String> {
     let mut stream_guard = state.stream.lock().map_err(|e| e.to_string())?;
     if stream_guard.is_some() {
         return Err("Already recording".into());
@@ -66,28 +61,37 @@ fn start_recording(
     let sample_rate = supported_config.sample_rate().0;
     let sample_format = supported_config.sample_format();
 
-    let (tx, rx) = std::sync::mpsc::channel::<Vec<f32>>();
-    *state.sample_tx.lock().map_err(|e| e.to_string())? = Some(tx.clone());
+    // Allocate a large shared lock-free storage map to protect against scheduler hiccups
+    let rb = Arc::new(SharedRb::<Heap<f32>>::new(32768));
+    let (mut producer, consumer) = rb.split();
 
-    // Pass the atomic shield modifier down into our active thread execution loop
     let strength_clone = Arc::clone(&state.shield_strength);
-    std::thread::spawn(move || run_dsp_loop(rx, app, sample_rate, strength_clone));
+    
+    // Spawn your real-time processing worker
+    std::thread::spawn(move || {
+        run_dsp_loop(consumer, app, sample_rate, strength_clone);
+    });
 
     let config = supported_config.into();
     let stream = match sample_format {
         cpal::SampleFormat::F32 => device.build_input_stream(
             &config,
-            move |data: &[f32], _| { let _ = tx.send(data.to_vec()); },
+            move |data: &[f32], _| { 
+                let _ = producer.push_slice(data); // Atomic memory push
+            },
             |err| eprintln!("Stream error: {err}"),
             None,
         ),
         cpal::SampleFormat::I16 => device.build_input_stream(
             &config,
             move |data: &[i16], _| {
-                let f32_data: Vec<f32> = data.iter()
-                    .map(|&s| s as f32 / i16::MAX as f32)
-                    .collect();
-                let _ = tx.send(f32_data);
+                let mut stack_buf = [0.0_f32; 1024];
+                for chunk in data.chunks(1024) {
+                    for (i, &sample) in chunk.iter().enumerate() {
+                        stack_buf[i] = sample as f32 / i16::MAX as f32;
+                    }
+                    let _ = producer.push_slice(&stack_buf[..chunk.len()]);
+                }
             },
             |err| eprintln!("Stream error: {err}"),
             None,
@@ -103,33 +107,18 @@ fn start_recording(
 #[tauri::command]
 fn stop_recording(state: tauri::State<'_, AudioState>) -> Result<(), String> {
     *state.stream.lock().map_err(|e| e.to_string())? = None;
-    *state.sample_tx.lock().map_err(|e| e.to_string())? = None;
+    *state.audio_consumer.lock().map_err(|e| e.to_string())? = None;
     Ok(())
 }
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
-#[tauri::command]
-fn testing() -> String {
-    println!("Called from front");
-    "Hello from rust".to_string()
-}
-
-#[tauri::command]
-fn check_mic_permission() -> bool { true }
+#[tauri::command] fn greet(name: &str) -> String { format!("Hello, {}!", name) }
+#[tauri::command] fn testing() -> String { "Hello from rust".to_string() }
+#[tauri::command] fn check_mic_permission() -> bool { true }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(AudioState::new())
-        .plugin(tauri_plugin_websocket::init())
-        .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_http::init())
-        .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             greet,

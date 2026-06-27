@@ -5,16 +5,14 @@ import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { invoke } from '@tauri-apps/api/core';
 
-/**
- * Structural definition for application audio tracks.
- * Accommodates both pre-compiled assets and dynamically generated local user selections.
- */
 interface AudioTrack {
   id: string;
   title: string;
   fileName: string;
+  fullPath?: string; 
   duration: string;
   type: string;
+  isLocalDeviceFile?: boolean; 
 }
 
 @Component({
@@ -25,66 +23,59 @@ interface AudioTrack {
   styleUrl: "./app.component.css",
 })
 export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
-  // --- ViewChild DOM Pointers ---
-  // Connects directly to the HTML5 Canvas instance for real-time spectrogram renderings
   @ViewChild('spectrogramCanvas', { static: false }) canvasRef!: ElementRef<HTMLCanvasElement>;
-  // Handles parent bounding block rules to dynamically maintain responsive fluid layouts
   @ViewChild('canvasContainer', { static: false }) containerRef!: ElementRef<HTMLDivElement>;
-  // Targets the core HTML5 Audio rendering element responsible for piping active audio data
   @ViewChild('testAudioPlayer', { static: false }) audioPlayerRef!: ElementRef<HTMLAudioElement>;
   
-  // --- Core Reactive App State Properties ---
   currentTab: 'home' | 'music' = 'home';
-  isShieldEngaged = false;     // Tracks whether ambient microphone filtering layers are listening
-  isCalibrating = false;        // Dictates if backend DSP processes are establishing base noise levels
-  isPlaying = false;            // Current audio playback toggle state tracking flag
-  dominantHertz = 0;            // The current primary background frequency node calculated by Rust
-  noiseDb = -200;               // Total measured environmental noise intensity measured in decibels
-  
-  //  Master calibration scaler transmitted across Tauri Inter-Process Communication (IPC)
+  isShieldEngaged = false;
+  isCalibrating = false;
+  isPlaying = false;
+  dominantHertz = 0;
+  noiseDb = -200;
   shieldStrength = 1.0; 
 
-  // --- Analytical DSP Matrices Arrays ---
-  private currentBands: any[] = [];    // Raw, high-frequency active equalizer filter bands from the service
-  private smoothedGains: number[] = [];  // Historic mathematical arrays used to stabilize rendering jitters
-  throttledBands: any[] = [];           // Human-readable, performance-throttled array mapped directly to UI loops
+  private currentBands: any[] = [];
+  private smoothedGains: number[] = [];
+  throttledBands: any[] = [];
 
-  // Hardcoded reference tracking profiles compiled in app assets directory
+  // 1. Core Asset Presets
   trackList: AudioTrack[] = [
     { id: 't1', title: 'Hooligang Reference Bass Mix', fileName: 'hooligang.mp3', duration: '3:42', type: 'Cabin Profile' },
     { id: 't2', title: 'White Noise Isolation Sweep', fileName: 'whitenoise.mp3', duration: '5:00', type: 'Static Masking' },
     { id: 't3', title: 'Low Frequency Pink Noise Frame', fileName: 'pinknoise.mp3', duration: '4:15', type: 'Vibration Counter' }
   ];
+  
+  // 2. Native Storage Exploration Cache
+  deviceTrackList: AudioTrack[] = [];
+  
+  // 3. Consolidated Active Playback Queue
+  activeQueue: AudioTrack[] = [];
+  currentTrackIndex = 0;
   selectedTrack: AudioTrack = this.trackList[0];
-
-  // --- Component Lifecycle Garbage-Collection Objects ---
-  private dspSubscription: Subscription | null = null; // Stores continuous stream events emitted by Cabin service
-  private animationFrameId!: number;                   // Tracks active requestAnimationFrame IDs to clear draw loops
-  private uiIntervalId: any = null;                    // Interval holder managing throttled data updates
-  private audioObjectUrl: string | null = null;        // Local hardware pointer address parsing active tracks
+  
+  isScanningHardware = false;
+  private dspSubscription: Subscription | null = null;
+  private animationFrameId!: number;
+  private uiIntervalId: any = null;
+  private audioObjectUrl: string | null = null;
 
   constructor(private cabin: CabinAudioService, private cdr: ChangeDetectorRef) {
-    // Establishes fallback frequencies to construct standard indicator structures before microphone initialization
     const defaultFreqs = [60, 150, 240, 350, 480];
     this.throttledBands = defaultFreqs.map(f => ({ frequency: f, gain_db: 0, q: 1.5 }));
+    // Build initial playback array from compilation defaults
+    this.rebuildActiveQueue();
   }
 
-  /**
-   * INITIALIZATION LIFECYCLE:
-   * Sets up real-time audio analysis data pipelines.
-   */
   ngOnInit() {
-    // Subscribes to incoming audio analysis matrices parsed by the core Cabin audio engine
     this.dspSubscription = this.cabin.dspFrame$.subscribe({
       next: (frame: any) => {
         if (frame) {
-          // Unpacks frequency characteristics from calculations processed on backend threads
           this.dominantHertz = frame.dominant_hz;
           this.noiseDb = frame.noise_db;
           this.isCalibrating = !!frame.calibrating;
           this.currentBands = frame.bands || [];
 
-          // Feeds environmental noise offsets back into Web Audio API Peaking Filters
           if (this.isShieldEngaged && !this.isCalibrating) {
             this.cabin.updateLiveMultipliers(this.currentBands);
           }
@@ -93,141 +84,184 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (err) => console.error("DSP Frame Subscription Error:", err)
     });
 
-    // Throttled UI Display Loop: Captures high-frequency streams and updates the template
-    // every 400ms to maintain application responsiveness and prevent browser strain.
     this.uiIntervalId = setInterval(() => {
       if (this.isShieldEngaged && !this.isCalibrating && this.currentBands.length > 0) {
-        this.throttledBands = JSON.parse(JSON.stringify(this.currentBands));
-        this.cdr.detectChanges(); // Manually requests DOM checks to maintain low latency updates
+        if (this.throttledBands.length !== this.currentBands.length) {
+          this.throttledBands = this.currentBands.map(b => ({ ...b }));
+        } else {
+          for (let i = 0; i < this.currentBands.length; i++) {
+            this.throttledBands[i].frequency = this.currentBands[i].frequency;
+            this.throttledBands[i].gain_db = this.currentBands[i].gain_db;
+            this.throttledBands[i].q = this.currentBands[i].q;
+          }
+        }
+        this.cdr.detectChanges(); 
       }
     }, 400);
+
+    this.scanDeviceHardwareTracks();
   }
 
-  /**
-   * DOM READY LIFECYCLE:
-   * Fires once canvas and audio tags are mapped to the DOM.
-   */
   ngAfterViewInit() {
-    this.resizeCanvasToContainer(); // Corrects rendering scales matching initial layouts
-    this.initCanvasLoop();          // Spawns recursive 60 FPS spectrogram graph loop
-    this.loadTrackAsset(this.selectedTrack); // Pre-loads application initialization audio profile
+    this.resizeCanvasToContainer();
+    this.initCanvasLoop(); 
+    this.loadTrackAsset(this.selectedTrack);
+
+    // Bind Native HTML5 End Signals to automate loop advancements
+    const audio = this.audioPlayerRef.nativeElement;
+    audio.addEventListener('ended', () => this.onTrackEnded());
   }
 
-  /**
-   * TEARDOWN LIFECYCLE:
-   * Prevents system memory leaks when navigating away or destroying components.
-   */
   ngOnDestroy() {
-    if (this.dspSubscription) this.dspSubscription.unsubscribe(); // Closes reactive observable tracking
-    if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId); // Terminates graphic loop cycles
-    if (this.uiIntervalId) clearInterval(this.uiIntervalId); // Destroys UI throttling interval loops
-    this.clearAudioObjectUrl(); // Discards active local media resource bindings from RAM
+    if (this.dspSubscription) this.dspSubscription.unsubscribe();
+    if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+    if (this.uiIntervalId) clearInterval(this.uiIntervalId);
+    this.clearAudioObjectUrl();
   }
 
-  /**
-   * Fluid layout watcher keeping HTML5 canvas grid pixels in alignment with window shifts
-   */
   @HostListener('window:resize')
   onWindowResize() {
     this.resizeCanvasToContainer();
   }
 
   /**
-   * TAURI RUST BACKEND SYNC:
-   * Translates front-end filter parameters down across the Tauri IPC channel.
-   * Fires whenever the user alters the shield configuration slider.
+   * Constructs the unified sequence array mapping out indices sequentially
    */
+  private rebuildActiveQueue() {
+    this.activeQueue = [...this.deviceTrackList, ...this.trackList];
+    // Re-verify index points matching the currently highlighted target element
+    const foundIndex = this.activeQueue.findIndex(t => t.id === this.selectedTrack.id);
+    this.currentTrackIndex = foundIndex !== -1 ? foundIndex : 0;
+  }
+
   onStrengthChange() {
     invoke('set_shield_strength', { strength: this.shieldStrength })
       .catch(err => console.error("Tauri IPC Invocation Error:", err));
   }
 
-  /**
-   * Standard Local Asset Loader:
-   * Fetches pre-compiled track assets inside the frontend build directory, convert them to raw Blobs,
-   * and pipes the resulting stream link to the audio context.
-   */
+  async scanDeviceHardwareTracks() {
+    this.isScanningHardware = true;
+    this.cdr.detectChanges();
+    try {
+      const tracks = await invoke<any[]>('get_local_music_tracks');
+      this.deviceTrackList = tracks.map(t => ({
+        id: t.id,
+        title: t.title,
+        fileName: t.file_name,
+        fullPath: t.full_path, 
+        duration: t.duration,
+        type: t.type,
+        isLocalDeviceFile: true
+      }));
+      this.rebuildActiveQueue();
+    } catch (err) {
+      console.error("Failed to compile native local elements:", err);
+    } finally {
+      this.isScanningHardware = false;
+      this.cdr.detectChanges();
+    }
+  }
+
   async loadTrackAsset(track: AudioTrack) {
     try {
-      this.clearAudioObjectUrl(); // Drops previous system pointers
-      const assetPath = `assets/${track.fileName}`;
-      
-      const response = await fetch(assetPath);
-      const blob = await response.blob();
-      
-      this.audioObjectUrl = URL.createObjectURL(blob);
+      this.clearAudioObjectUrl();
       const audio = this.audioPlayerRef.nativeElement;
       
-      audio.src = this.audioObjectUrl;
-      audio.load();
+      if (track.isLocalDeviceFile && track.fullPath) {
+        const encodedPath = encodeURIComponent(track.fullPath);
+        audio.src = `rumble-stream://localhost/${encodedPath}`;
+      } else {
+        const assetPath = `assets/${track.fileName}`;
+        const response = await fetch(assetPath);
+        const blob = await response.blob();
+        this.audioObjectUrl = URL.createObjectURL(blob);
+        audio.src = this.audioObjectUrl;
+      }
       
-      this.cabin.connectAudioElement(audio); // Ties audio channel into the analysis node pipeline
+      audio.load();
+      this.cabin.connectAudioElement(audio); 
+      
       if (this.isPlaying) {
         audio.play().catch(() => this.isPlaying = false);
       }
     } catch (err) {
-      console.error("Android Target Asset Loader Failure:", err);
+      console.error("Custom Protocol Playback Fault:", err);
     }
   }
 
   /**
-   * DYNAMIC MUSIC PICKER SYSTEM:
-   * Processes local file uploads on the user's hardware.
-   * Bypasses standard server networks by creating an encrypted, temporary local system resource path pointer.
+   * ⏭️ SPOTIFY-STYLE NAVIGATION: NEXT TRACK
    */
+  nextTrack() {
+    if (this.activeQueue.length === 0) return;
+    this.currentTrackIndex = (this.currentTrackIndex + 1) % this.activeQueue.length;
+    this.selectedTrack = this.activeQueue[this.currentTrackIndex];
+    this.loadTrackAsset(this.selectedTrack);
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * ⏮️ SPOTIFY-STYLE NAVIGATION: PREVIOUS TRACK
+   */
+  prevTrack() {
+    if (this.activeQueue.length === 0) return;
+    this.currentTrackIndex = (this.currentTrackIndex - 1 + this.activeQueue.length) % this.activeQueue.length;
+    this.selectedTrack = this.activeQueue[this.currentTrackIndex];
+    this.loadTrackAsset(this.selectedTrack);
+    this.cdr.detectChanges();
+  }
+
+  private onTrackEnded() {
+    // Standard streaming player loop logic: advance immediately
+    this.nextTrack();
+  }
+
   async onLocalFileSelected(event: Event) {
     const target = event.target as HTMLInputElement;
     if (!target.files || target.files.length === 0) return;
 
     const file = target.files[0];
-    this.clearAudioObjectUrl(); // Cleans up previous selections to keep RAM footprint low
+    this.clearAudioObjectUrl();
 
-    // Constructs a custom track metadata footprint mimicking your hardcoded structures
-    const localTrack: AudioTrack = {
-      id: `local-${Date.now()}`,
-      title: file.name.replace(/\.[^/.]+$/, ""), // Cleans file suffix strings (e.g. '.mp3')
+    const sandboxTrack: AudioTrack = {
+      id: `sandbox-${Date.now()}`,
+      title: file.name.replace(/\.[^/.]+$/, ""), 
       fileName: file.name,
-      duration: '--:--', // Dynamically updated by native element metadata configurations later
-      type: 'Local File'
+      duration: '--:--', 
+      type: 'Ad-hoc Sandbox'
     };
 
-    this.selectedTrack = localTrack;
+    // Inject external file directly inside the runtime sequence structure
+    this.activeQueue.unshift(sandboxTrack);
+    this.currentTrackIndex = 0;
+    this.selectedTrack = sandboxTrack;
 
     try {
-      // Maps a direct hardware-to-browser stream memory pointer (blob url)
       this.audioObjectUrl = URL.createObjectURL(file);
       const audio = this.audioPlayerRef.nativeElement;
-
       audio.src = this.audioObjectUrl;
-      audio.load(); // Forces HTML5 audio engine reload routines
-
-      // Connects the imported track directly into your canvas rendering system 
-      // and frequency adjustment filters without needing to edit the audio service.
+      audio.load();
       this.cabin.connectAudioElement(audio);
       
       if (this.isPlaying) {
         audio.play().catch(() => this.isPlaying = false);
       }
-
-      this.cdr.detectChanges(); // Enforces fast UI redraws to reveal newly selected track properties
+      this.cdr.detectChanges();
     } catch (err) {
-      console.error("Local Audio Picker Processing System Failure:", err);
+      console.error("Web Picker Injection Error:", err);
     }
   }
 
-  /**
-   * Iterates track parameters when standard pre-defined track selections get clicked
-   */
   selectTrack(track: AudioTrack) {
     this.selectedTrack = track;
+    const index = this.activeQueue.findIndex(t => t.id === track.id);
+    if (index !== -1) {
+      this.currentTrackIndex = index;
+    }
     this.loadTrackAsset(track);
     this.cdr.detectChanges();
   }
 
-  /**
-   * Memory Cleanup Routine:
-   * Discards active system blob paths from RAM. Prevents audio data leaks from crashing the application.
-   */
   private clearAudioObjectUrl() {
     if (this.audioObjectUrl) {
       URL.revokeObjectURL(this.audioObjectUrl);
@@ -235,41 +269,33 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /**
-   * Handles user playback interactions (Play/Pause states)
-   */
   togglePlayback() {
     const audio = this.audioPlayerRef.nativeElement;
     if (this.isPlaying) {
       audio.pause();
       this.isPlaying = false;
     } else {
-      audio.play().catch(err => console.error("Audio Context Playback Lockout:", err));
+      audio.play().catch(err => console.error("Audio Context Lockout Error:", err));
       this.isPlaying = true;
     }
     this.cdr.detectChanges();
   }
 
-  /**
-   * Activates/Deactivates Environmental Noise Isolation:
-   * Integrates the Web Audio browser pipeline with the Rust Tauri recorder thread.
-   */
   async toggleShield() {
     this.isShieldEngaged = !this.isShieldEngaged;
     
     if (this.isShieldEngaged) {
       try {
-        await this.cabin.startListening(); // Activates frontend audio context listener nodes
-        await invoke('start_recording');    // Triggers local OS recording drivers through Rust thread pools
+        await this.cabin.startListening(); 
+        await invoke('start_recording');
       } catch (err) {
         console.error("Shield activation failure:", err);
         this.isShieldEngaged = false;
       }
     } else {
       try {
-        await invoke('stop_recording'); // Safely parks Rust audio recording loop operations
+        await invoke('stop_recording');
       } catch (err) {}
-      // Normalizes active tracker parameters back down to default baseline parameters
       this.dominantHertz = 0;
       this.noiseDb = -200;
       this.isCalibrating = false;
@@ -279,9 +305,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  /**
-   * Computes canvas display scaling matrices matching outer container elements
-   */
   private resizeCanvasToContainer() {
     if (this.canvasRef && this.containerRef) {
       const canvas = this.canvasRef.nativeElement;
@@ -291,23 +314,17 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /**
-   * HIGH PERFORMANCE GRAPHICS SYSTEM:
-   * Sets up a recursive drawing process rendering audio changes smoothly at a 60 FPS refresh rate.
-   */
   private initCanvasLoop() {
     const render = () => {
-      this.animationFrameId = requestAnimationFrame(render); // Registers subsequent display cycle updates
+      this.animationFrameId = requestAnimationFrame(render);
       if (!this.canvasRef) return;
 
       const canvas = this.canvasRef.nativeElement;
       const ctx = canvas.getContext('2d'); 
       if (!ctx) return;
 
-      // Cleans previous graphic frames to handle fresh calculations
       ctx.clearRect(0, 0, canvas.width, canvas.height); 
       
-      // --- Background Matrix Grid Rendering Block ---
       ctx.strokeStyle = 'rgba(25, 135, 84, 0.12)'; 
       ctx.lineWidth = 1;
       for (let i = 0; i < canvas.width; i += 30) {
@@ -317,10 +334,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke(); 
       }
 
-      // --- Active Spectrogram Visualizer Logic ---
       if (this.isShieldEngaged && !this.isCalibrating && this.currentBands.length > 0) {
         const totalPoints = this.currentBands.length;
-        // Initializes historic smoothing vectors matching active filter ranges
         if (this.smoothedGains.length !== totalPoints) {
           this.smoothedGains = new Array(totalPoints).fill(0);
         }
@@ -330,22 +345,19 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         const freqRange = maxFreq - minFreq || 1; 
 
         const points: {x: number, y: number}[] = [];
-        const timeFactor = Date.now() * 0.05; // Drives continuous waving motions
+        const timeFactor = Date.now() * 0.05;
 
-        // Maps raw numerical frequency data directly to coordinate positions on the canvas grid
         for (let i = 0; i < totalPoints; i++) {
           const band = this.currentBands[i];
           const x = ((band.frequency - minFreq) / freqRange) * canvas.width;
-          let normalizedGain = (band.gain_db) / 6.0; // Standardizes peak vector amplitudes
+          let normalizedGain = (band.gain_db) / 6.0; 
           
-          // Amplifies wave movements if close to the primary background noise frequency
           const deltaHz = Math.abs(band.frequency - this.dominantHertz);
           if (deltaHz < 100 && this.dominantHertz > 0) {
             const proximityFactor = 1.0 - (deltaHz / 100);
             normalizedGain += Math.sin(timeFactor + i) * 0.15 * proximityFactor;
           }
           
-          // Low-pass mathematical modifier preventing jagged vector spikes during rapid audio transitions
           this.smoothedGains[i] += (normalizedGain - this.smoothedGains[i]) * 0.25;
           const usableHeight = canvas.height - 40;
           const y = canvas.height - 20 - (Math.max(0, Math.min(this.smoothedGains[i], 1.0)) * usableHeight);
@@ -353,20 +365,17 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
           points.push({ x, y });
         }
 
-        // Fills the bottom area of the audio wave graph with a semi-transparent color tint
         ctx.fillStyle = 'rgba(25, 135, 84, 0.06)';
         ctx.beginPath(); ctx.moveTo(0, canvas.height);
         points.forEach(p => ctx.lineTo(p.x, p.y));
         ctx.lineTo(canvas.width, canvas.height); ctx.closePath(); ctx.fill();
 
-        // Draws the main green outline path representing active equalizations
         ctx.strokeStyle = '#198754'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
-        ctx.shadowBlur = 10; ctx.shadowColor = '#198754'; // Generates glow path effects
+        ctx.shadowBlur = 10; ctx.shadowColor = '#198754';
         ctx.beginPath();
         points.forEach((p, idx) => idx === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-        ctx.stroke(); ctx.shadowBlur = 0; // Drops active display lighting parameters to preserve memory
+        ctx.stroke(); ctx.shadowBlur = 0;
       } else {
-        // Fallback Flat Engine Baseline: Renders a static horizontal bar when monitoring tools are offline
         ctx.strokeStyle = '#2c4c38'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(0, canvas.height / 2); ctx.lineTo(canvas.width, canvas.height / 2); ctx.stroke();
       }

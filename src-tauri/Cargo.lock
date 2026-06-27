@@ -3361,6 +3361,7 @@ dependencies = [
  "jni",
  "ndk-context",
  "num-complex",
+ "percent-encoding",
  "realfft",
  "ringbuf",
  "rustfft",

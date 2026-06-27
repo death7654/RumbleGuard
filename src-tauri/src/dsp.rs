@@ -82,7 +82,6 @@ fn analyze_cabin_spectrum_optimized(
         return DspFrame { bands: vec![], dominant_hz: 0.0, noise_db: -200.0, calibrating: true };
     }
 
-    // Allocate single temporary vector containing only our targeted low frequency range
     let mut indexed: Vec<(usize, f32)> = ema_spectrum[min_bin..=max_bin]
         .iter()
         .enumerate()
@@ -91,7 +90,6 @@ fn analyze_cabin_spectrum_optimized(
 
     let target_peaks = 5.min(indexed.len());
     
-    // O(N) QuickSelect partitioning instead of full array sorting
     let (left, _el, _right) = indexed.select_nth_unstable_by(target_peaks - 1, |a, b| {
         b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
     });
@@ -132,7 +130,6 @@ pub fn run_dsp_loop<C: Consumer<Item = f32>>(
     let fft = planner.plan_fft_forward(FFT_SIZE);
     let window = hann_window(FFT_SIZE);
     
-    // Continuous local ring accumulation buffer
     let mut local_history = vec![0.0_f32; FFT_SIZE];
 
     let hop_secs = HOP_SIZE as f32 / sample_rate as f32;
@@ -143,7 +140,6 @@ pub fn run_dsp_loop<C: Consumer<Item = f32>>(
     let mut prev_magnitudes = vec![0.0; spectrum_len];
     let mut floor_spectrum = vec![0.0; spectrum_len];
 
-    // Reuseable Pre-allocated Scratchpads (Zero runtime allocation triggers)
     let mut fft_input_frame = vec![0.0_f32; FFT_SIZE];
     let mut fft_output_spectrum = fft.make_output_vec();
     let mut magnitudes = vec![0.0_f32; spectrum_len];
@@ -156,14 +152,12 @@ pub fn run_dsp_loop<C: Consumer<Item = f32>>(
     let mut frames_since_emit: usize = 0;
     let mut initialized = false;
 
-    // Fast-forward local buffer with initial input samples
     while consumer.occupied_len() < FFT_SIZE {
         std::thread::sleep(std::time::Duration::from_millis(10));
     }
     consumer.pop_slice(&mut local_history);
 
     loop {
-        // Apply windowing from history window
         for i in 0..FFT_SIZE {
             fft_input_frame[i] = local_history[i] * window[i];
         }
@@ -209,12 +203,10 @@ pub fn run_dsp_loop<C: Consumer<Item = f32>>(
             }
         }
 
-        // SLIDING WINDOW HOP: 
-        // Move the older data leftwards by HOP_SIZE elements, then read new HOP_SIZE items into the end
         local_history.copy_within(HOP_SIZE..FFT_SIZE, 0);
         
         while consumer.occupied_len() < HOP_SIZE {
-            std::thread::sleep(std::time::Duration::from_millis(2)); // Sleep cleanly until hop data fills
+            std::thread::sleep(std::time::Duration::from_millis(2));
         }
         consumer.pop_slice(&mut local_history[FFT_SIZE - HOP_SIZE..]);
     }

@@ -1,18 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
-    <uses-feature android:name="android.software.leanback" android:required="false" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!-- Core network access -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Microphone: required for cabin noise capture -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- MODIFY_AUDIO_SETTINGS: required to call AudioManager.setMode()
+         (MODE_IN_COMMUNICATION) and setParameters() (noise_suppression=off).
+         Without this permission, both calls silently fail and the mic stream
+         gets killed when audio playback starts. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <!-- FOREGROUND_SERVICE + microphone type: keeps the capture alive when the
+         app is backgrounded (e.g., screen locked while driving). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
+    <!-- WAKE_LOCK: prevents the CPU from sleeping mid-capture on long drives.
+         Without this the DSP thread can stall on devices with aggressive doze. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Storage: read music files from device -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
+    <!-- Declare that mic is used but not required (graceful degradation on tablets) -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-feature android:name="android.software.leanback" android:required="false" />
 
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/Theme.rumbleguard"
         android:usesCleartextTraffic="${usesCleartextTraffic}">
-        
+
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
             android:launchMode="singleTask"
@@ -26,14 +50,24 @@
             </intent-filter>
         </activity>
 
+        <!-- Foreground service for background audio capture.
+             The foregroundServiceType="microphone" attribute is required on
+             Android 14+ for any foreground service that accesses the mic. -->
+        <service
+            android:name=".RumbleGuardCaptureService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+
         <provider
-          android:name="androidx.core.content.FileProvider"
-          android:authorities="${applicationId}.fileprovider"
-          android:exported="false"
-          android:grantUriPermissions="true">
-          <meta-data
-            android:name="android.support.FILE_PROVIDER_PATHS"
-            android:resource="@xml/file_paths" />
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
         </provider>
+
     </application>
 </manifest>
